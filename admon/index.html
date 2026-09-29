@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Administración 8S · Zubex</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#0D18A8;--naranja:#FF4E00;--ok:#1E8E3E;--mal:#D7261E;--bg:#EEF0F7;--panel:#fff;--ink:#141833;--ink2:#50577A;--line:#D5D9E8;
+  --font:"Schibsted Grotesk","Lab Grotesque","Helvetica Neue",Arial,sans-serif;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0E1130;--panel:#181C44;--ink:#EEF0FA;--ink2:#A7ADCF;--line:#2C3163;}}
+:root[data-theme="dark"]{--bg:#0E1130;--panel:#181C44;--ink:#EEF0FA;--ink2:#A7ADCF;--line:#2C3163;}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.45}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--naranja);outline-offset:2px}
+.hide{display:none!important}
+.top{background:var(--azul);color:#fff;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.top-in{max-width:1100px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.top b{font-size:20px;font-weight:800;margin-right:auto}
+.top small{opacity:.85;font-size:14px}
+main{max-width:1100px;margin:0 auto;padding:20px 20px 60px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:16px}
+.login{max-width:420px;margin:40px auto}
+.login h1{margin:0 0 6px;font-size:24px}
+label.f{display:block;font-weight:700;font-size:14px;margin-top:12px}
+input,select{width:100%;margin-top:5px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:10px 12px}
+.btn{border:0;border-radius:8px;padding:10px 16px;font-weight:800;cursor:pointer;white-space:nowrap}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.b1{background:var(--naranja);color:#fff}.b2{background:var(--azul);color:#fff}.b3{background:transparent;border:1px solid var(--line)}
+.bd{background:transparent;border:1px solid var(--mal);color:var(--mal)}
+.top .b3{border-color:rgba(255,255,255,.4);color:#fff}
+.tabs{display:flex;gap:4px;overflow-x:auto;margin-bottom:16px;border-bottom:2px solid var(--line)}
+.tab{background:none;border:0;padding:10px 14px;font-weight:700;color:var(--ink2);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+.tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--naranja)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.row>div{flex:1;min-width:160px}
+.row>div.s{flex:0 0 140px;min-width:120px}
+h2{margin:0 0 4px;font-size:20px}
+.sub{color:var(--ink2);margin:0 0 12px;font-size:14px}
+.wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th{text-align:left;font-size:12px;color:var(--ink2);border-bottom:2px solid var(--line);padding:8px}
+td{border-bottom:1px solid var(--line);padding:8px;vertical-align:middle}
+td.acts{text-align:right;white-space:nowrap}
+td.acts .btn{padding:6px 10px;font-size:13px}
+.grp{font-weight:800;color:var(--azul);padding-top:18px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .grp{color:#AEB4FF}}
+.sw{position:relative;display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-weight:700;font-size:14px}
+.sw input{position:absolute;opacity:0;width:1px;height:1px}
+.sw i{width:44px;height:24px;border-radius:12px;background:#C9CDEA;position:relative;transition:background .15s}
+.sw i::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s}
+.sw input:checked+i{background:var(--ok)}
+.sw input:checked+i::after{left:23px}
+.sw input:focus-visible+i{outline:3px solid var(--naranja);outline-offset:2px}
+.on{color:var(--ok)}.off{color:var(--mal)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#141833;color:#fff;padding:12px 18px;border-radius:10px;font-weight:600;z-index:60;max-width:90vw}
+.err{color:var(--mal);font-weight:600;margin-top:10px;min-height:22px}
+.det{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px 18px;margin:12px 0}
+.det b{display:block;font-size:12px;color:var(--ink2)}
+.det img{max-width:260px;border:1px solid var(--line);border-radius:8px;background:#fff}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in"><b>Administración 8S</b><small id="who"></small><button class="btn b3 hide" id="salir">Cerrar sesión</button></div></header>
+<main>
+  <section class="card login" id="vLogin">
+    <h1>Iniciar sesión</h1>
+    <p class="sub">Solo para personal autorizado de Mejora Continua.</p>
+    <input id="em" type="text" value="n.candia@zubex.com.mx" autocomplete="username" hidden>
+    <label class="f" for="pw">Contraseña</label><input id="pw" type="password" autocomplete="current-password">
+    <div class="err" id="lErr" aria-live="polite"></div>
+    <button class="btn b1" id="entrar" style="width:100%;margin-top:6px">Entrar</button>
+  </section>
+  <section id="vApp" class="hide">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-t="per" aria-selected="true">Personal</button>
+      <button class="tab" role="tab" data-t="are" aria-selected="false">Áreas</button>
+      <button class="tab" role="tab" data-t="equ" aria-selected="false">Equipos Lean</button>
+      <button class="tab" role="tab" data-t="aud" aria-selected="false">Auditorías</button>
+    </div>
+    <div id="panel"></div>
+  </section>
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, getDocs, doc, getDoc, setDoc, deleteDoc, updateDoc, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { firebaseConfig } from "../firebase-config.js";
+
+// Cuenta de administración creada en Firebase Authentication. Solo se pide la contraseña.
+const ADMIN_EMAIL='n.candia@zubex.com.mx';
+const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
+const DEPS=['EXTRUSIÓN','IMPRESIÓN','CONVERSIÓN','CORRUGADO','CALIDAD','INGENIERÍA','ADMINISTRACIÓN PRODUCTIVA'];
+const DN={'EXTRUSIÓN':'Extrusión','IMPRESIÓN':'Impresión','CONVERSIÓN':'Conversión','CORRUGADO':'Corrugado','CALIDAD':'Calidad','INGENIERÍA':'Ingeniería','ADMINISTRACIÓN PRODUCTIVA':'Admón. Productiva'};
+const SN=['Seguridad','SQF-BPM´s','Sustentabilidad','Seleccionar','Ordenar','Limpiar','Estandarizar','Mantener'];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const nat=(a,b)=>String(a).localeCompare(String(b),'es',{numeric:true,sensitivity:'base'});
+const norm=s=>String(s||'').replace(/\s+/g,' ').trim().toUpperCase();
+function toast(t){ const d=document.createElement('div'); d.className='toast'; d.setAttribute('role','status'); d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),2600); }
+function fallo(e){ console.error(e); toast(e.code==='permission-denied'?'Tu cuenta no tiene permiso para hacer cambios.':'No se pudo guardar. Revisa la conexión e intenta de nuevo.'); }
+
+let tab='per', EMP=null, CAT=null, fPer='', edPer=null, edEq=null;
+
+// ---------- sesión ----------
+$('entrar').onclick=async()=>{ $('lErr').textContent=''; try{ await signInWithEmailAndPassword(auth,ADMIN_EMAIL,$('pw').value); }catch(e){ $('lErr').textContent=e.code==='auth/too-many-requests'?'Demasiados intentos. Espera unos minutos.':'Contraseña incorrecta.'; } };
+$('pw').addEventListener('keydown',e=>{ if(e.key==='Enter') $('entrar').click(); });
+$('salir').onclick=()=>signOut(auth);
+onAuthStateChanged(auth,u=>{
+  $('vLogin').classList.toggle('hide',!!u); $('vApp').classList.toggle('hide',!u); $('salir').classList.toggle('hide',!u);
+  $('who').textContent=u?'Sesión iniciada':''; if(u) render(); else { EMP=null; CAT=null; }
+});
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{ tab=t.dataset.t; document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===t)); render(); });
+
+async function cargarCat(){ if(!CAT){ const s=await getDoc(doc(db,'catalogos','general')); CAT=s.data(); } return CAT; }
+async function guardarCat(campo){ await updateDoc(doc(db,'catalogos','general'),{[campo]:CAT[campo],actualizado:serverTimestamp()}); }
+
+async function render(){
+  const P=$('panel'); P.innerHTML='<div class="card">Cargando…</div>';
+  try{ if(tab==='per') await vPer(P); if(tab==='are') await vAre(P); if(tab==='equ') await vEqu(P); if(tab==='aud') vAud(P); }
+  catch(e){ console.error(e); P.innerHTML=`<div class="card">${e.code==='permission-denied'?'Tu cuenta no tiene permiso de administración. Pide que la agreguen a las reglas de Firestore.':'No se pudo cargar la información. Recarga la página.'}</div>`; }
+}
+
+// ---------- Personal ----------
+async function vPer(P){
+  if(!EMP){ const s=await getDocs(collection(db,'empleados')); EMP=[]; s.forEach(d=>EMP.push({no:d.id,...d.data()})); }
+  const deps=[...new Set([...DEPS,...EMP.map(e=>e.departamento).filter(Boolean)])].sort(nat);
+  const q=fPer.toLowerCase(), l=EMP.filter(e=>!q||(e.no+' '+e.nombre+' '+e.departamento).toLowerCase().includes(q)).sort((a,b)=>nat(a.nombre,b.nombre));
+  const e=edPer||{no:'',nombre:'',departamento:''};
+  P.innerHTML=`<div class="card"><h2>${edPer?'Editar persona':'Agregar persona'}</h2><p class="sub">El número de nómina es el que se captura en la auditoría. El nombre se guarda en mayúsculas.</p>
+    <div class="row"><div class="s"><label class="f" for="pNo">Nómina</label><input id="pNo" inputmode="numeric" value="${esc(e.no)}" ${edPer?'disabled':''}></div>
+    <div><label class="f" for="pNom">Nombre (apellidos primero)</label><input id="pNom" value="${esc(e.nombre)}"></div>
+    <div><label class="f" for="pDep">Departamento</label><select id="pDep"><option value="">Selecciona</option>${deps.map(d=>`<option ${d===e.departamento?'selected':''}>${esc(d)}</option>`).join('')}</select></div>
+    <div style="flex:0 0 auto;display:flex;gap:8px"><button class="btn b1" id="pSave">${edPer?'Guardar cambios':'Agregar'}</button>${edPer?'<button class="btn b3" id="pCan">Cancelar</button>':''}</div></div>
+    <div class="err" id="pErr" aria-live="polite"></div></div>
+   <div class="card"><div class="row" style="justify-content:space-between;align-items:center"><h2 style="flex:1">Personal (${EMP.length})</h2><div style="max-width:320px"><input id="pBus" type="search" placeholder="Buscar por nombre, nómina o departamento" value="${esc(fPer)}" aria-label="Buscar"></div></div>
+    <div class="wrap"><table><thead><tr><th>Nómina</th><th>Nombre</th><th>Departamento</th><th></th></tr></thead><tbody>
+    ${l.slice(0,300).map(x=>`<tr><td>${esc(x.no)}</td><td>${esc(x.nombre)}</td><td>${esc(x.departamento)}</td><td class="acts"><button class="btn b3" data-ed="${esc(x.no)}">Editar</button> <button class="btn bd" data-del="${esc(x.no)}">Dar de baja</button></td></tr>`).join('')}
+    </tbody></table></div>${l.length>300?'<p class="sub">Mostrando 300. Usa el buscador para encontrar a alguien.</p>':''}</div>`;
+  $('pBus').oninput=ev=>{ fPer=ev.target.value; clearTimeout(ev.target._k); ev.target._k=setTimeout(async()=>{ await vPer(P); const b=$('pBus'); b.focus(); b.setSelectionRange(b.value.length,b.value.length); },250); };
+  if($('pCan')) $('pCan').onclick=()=>{ edPer=null; vPer(P); };
+  $('pSave').onclick=async()=>{
+    const no=$('pNo').value.replace(/\D/g,''), nombre=norm($('pNom').value), departamento=$('pDep').value;
+    if(!no||!nombre||!departamento){ $('pErr').textContent='Completa nómina, nombre y departamento.'; return; }
+    if(!edPer && EMP.some(x=>x.no===no)){ $('pErr').textContent=`La nómina ${no} ya existe (${EMP.find(x=>x.no===no).nombre}).`; return; }
+    try{ await setDoc(doc(db,'empleados',no),{nombre,departamento});
+      const i=EMP.findIndex(x=>x.no===no); if(i>=0) EMP[i]={no,nombre,departamento}; else EMP.push({no,nombre,departamento});
+      toast(edPer?'Cambios guardados':'Persona agregada'); edPer=null; vPer(P);
+    }catch(e){ fallo(e); }
+  };
+  P.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>{ edPer=EMP.find(x=>x.no===b.dataset.ed); vPer(P); window.scrollTo({top:0}); });
+  P.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
+    const x=EMP.find(y=>y.no===b.dataset.del);
+    if(!confirm(`¿Dar de baja a ${x.nombre} (${x.no})?\n\nYa no se podrá capturar su nómina. Sus auditorías anteriores se conservan.`)) return;
+    try{ await deleteDoc(doc(db,'empleados',x.no)); EMP=EMP.filter(y=>y.no!==x.no); toast('Persona dada de baja'); vPer(P); }catch(e){ fallo(e); }
+  });
+}
+
+// ---------- Áreas ----------
+async function vAre(P){
+  await cargarCat();
+  P.innerHTML=`<div class="card"><h2>Agregar área</h2><div class="row">
+    <div><label class="f" for="aNom">Nombre del área</label><input id="aNom" placeholder="Ej. EXT 7"></div>
+    <div><label class="f" for="aDep">Departamento</label><select id="aDep"><option value="">Selecciona</option>${DEPS.map(d=>`<option value="${d}">${DN[d]}</option>`).join('')}</select></div>
+    <div style="flex:0 0 auto"><button class="btn b1" id="aAdd">Agregar</button></div></div><div class="err" id="aErr" aria-live="polite"></div></div>
+   <div class="card"><h2>Áreas</h2><p class="sub">Un área "En pausa" no aparece en la captura y en resultados se muestra como "En pausa". El cambio se guarda al momento.</p>
+   <div class="wrap"><table><tbody>${DEPS.map(d=>{ const as=CAT.areas.map((a,i)=>({...a,i})).filter(a=>a.d===d).sort((x,y)=>nat(x.a,y.a));
+     return `<tr><td colspan="3" class="grp">${DN[d]} (${as.length})</td></tr>`+as.map(a=>`<tr><td>${esc(a.a)}</td>
+      <td><label class="sw"><input type="checkbox" data-i="${a.i}" ${a.activa?'checked':''} aria-label="${esc(a.a)} activa"><i></i><span class="${a.activa?'on':'off'}">${a.activa?'Activa':'En pausa'}</span></label></td>
+      <td class="acts"><button class="btn bd" data-del="${a.i}">Eliminar</button></td></tr>`).join(''); }).join('')}</tbody></table></div></div>`;
+  P.querySelectorAll('.sw input').forEach(c=>c.onchange=async()=>{
+    const i=+c.dataset.i, prev=CAT.areas[i].activa; CAT.areas[i].activa=c.checked;
+    try{ await guardarCat('areas'); toast(`${CAT.areas[i].a}: ${c.checked?'activa':'en pausa'}`); vAre(P); }catch(e){ CAT.areas[i].activa=prev; c.checked=prev; fallo(e); }
+  });
+  P.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
+    const i=+b.dataset.del, a=CAT.areas[i];
+    if(!confirm(`¿Eliminar el área ${a.a}?\n\nÚsalo solo si el área ya no existe. Si es temporal, mejor ponla "En pausa". Sus auditorías anteriores se conservan.`)) return;
+    const copia=[...CAT.areas]; CAT.areas.splice(i,1);
+    try{ await guardarCat('areas'); toast('Área eliminada'); vAre(P); }catch(e){ CAT.areas=copia; fallo(e); }
+  });
+  $('aAdd').onclick=async()=>{
+    const a=String($('aNom').value).replace(/\s+/g,' ').trim(), d=$('aDep').value;
+    if(!a||!d){ $('aErr').textContent='Escribe el nombre y elige el departamento.'; return; }
+    if(CAT.areas.some(x=>x.a.toLowerCase()===a.toLowerCase())){ $('aErr').textContent='Ya existe un área con ese nombre.'; return; }
+    CAT.areas.push({a,d,activa:true});
+    try{ await guardarCat('areas'); toast('Área agregada'); vAre(P); }catch(e){ CAT.areas.pop(); fallo(e); }
+  };
+}
+
+// ---------- Equipos ----------
+async function vEqu(P){
+  await cargarCat();
+  const e=edEq!=null?CAT.equipos[edEq]:{e:'',l:'',d:''};
+  const lideres=[...new Set(CAT.equipos.map(x=>x.l))].sort(nat);
+  P.innerHTML=`<div class="card"><h2>${edEq!=null?'Editar equipo':'Agregar equipo'}</h2><p class="sub">En la captura, el coordinador se elige según el departamento del área, y después su equipo.</p><div class="row">
+    <div><label class="f" for="eNom">Equipo Lean</label><input id="eNom" value="${esc(e.e)}"></div>
+    <div><label class="f" for="eLid">Coordinador (líder)</label><input id="eLid" list="lids" value="${esc(e.l)}"><datalist id="lids">${lideres.map(l=>`<option value="${esc(l)}">`).join('')}</datalist></div>
+    <div><label class="f" for="eDep">Departamento</label><select id="eDep"><option value="">Selecciona</option>${[...new Set([...DEPS,...CAT.equipos.map(x=>x.d)])].map(d=>`<option value="${esc(d)}" ${d===e.d?'selected':''}>${esc(DN[d]||d)}</option>`).join('')}</select></div>
+    <div style="flex:0 0 auto;display:flex;gap:8px"><button class="btn b1" id="eSave">${edEq!=null?'Guardar cambios':'Agregar'}</button>${edEq!=null?'<button class="btn b3" id="eCan">Cancelar</button>':''}</div></div>
+    <div class="err" id="eErr" aria-live="polite"></div></div>
+   <div class="card"><h2>Equipos Lean (${CAT.equipos.length})</h2><div class="wrap"><table><thead><tr><th>Equipo</th><th>Coordinador</th><th>Departamento</th><th></th></tr></thead><tbody>
+   ${CAT.equipos.map((x,i)=>({...x,i})).sort((a,b)=>nat(a.d,b.d)||nat(a.e,b.e)).map(x=>`<tr><td>${esc(x.e)}</td><td>${esc(x.l)}</td><td>${esc(DN[x.d]||x.d)}</td><td class="acts"><button class="btn b3" data-ed="${x.i}">Editar</button> <button class="btn bd" data-del="${x.i}">Eliminar</button></td></tr>`).join('')}
+   </tbody></table></div></div>`;
+  if($('eCan')) $('eCan').onclick=()=>{ edEq=null; vEqu(P); };
+  $('eSave').onclick=async()=>{
+    const n={e:norm($('eNom').value),l:norm($('eLid').value),d:$('eDep').value};
+    if(!n.e||!n.l||!n.d){ $('eErr').textContent='Completa equipo, coordinador y departamento.'; return; }
+    const copia=CAT.equipos.map(x=>({...x}));
+    if(edEq!=null) CAT.equipos[edEq]=n; else CAT.equipos.push(n);
+    try{ await guardarCat('equipos'); toast(edEq!=null?'Cambios guardados':'Equipo agregado'); edEq=null; vEqu(P); }catch(e){ CAT.equipos=copia; fallo(e); }
+  };
+  P.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>{ edEq=+b.dataset.ed; vEqu(P); window.scrollTo({top:0}); });
+  P.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
+    const i=+b.dataset.del; if(!confirm(`¿Eliminar el equipo ${CAT.equipos[i].e}?`)) return;
+    const copia=CAT.equipos.map(x=>({...x})); CAT.equipos.splice(i,1);
+    try{ await guardarCat('equipos'); toast('Equipo eliminado'); edEq=null; vEqu(P); }catch(e){ CAT.equipos=copia; fallo(e); }
+  });
+}
+
+// ---------- Auditorías ----------
+function vAud(P){
+  P.innerHTML=`<div class="card"><h2>Eliminar una auditoría</h2><p class="sub">Para borrar auditorías de prueba o capturadas por error. Se quita también de los resultados. Esta acción no se puede deshacer.</p>
+   <div class="row"><div class="s"><label class="f" for="fo">Folio</label><input id="fo" inputmode="numeric"></div><div style="flex:0 0 auto"><button class="btn b2" id="buscar">Buscar</button></div></div>
+   <div class="err" id="fErr" aria-live="polite"></div><div id="det"></div></div>`;
+  const buscar=async()=>{
+    const f=$('fo').value.replace(/\D/g,''); $('det').innerHTML=''; $('fErr').textContent='';
+    if(!f) return;
+    try{
+      const s=await getDoc(doc(db,'auditorias',f));
+      if(!s.exists()){ $('fErr').textContent=`No existe el folio ${f}.`; return; }
+      const a=s.data(), h=(a.respuestas||[]).filter(r=>r.cumple==='No');
+      $('det').innerHTML=`<div class="det"><div><b>Área</b>${esc(a.area)} · ${esc(DN[a.departamento]||a.departamento)}</div><div><b>Fecha</b>${esc(a.fecha)}</div><div><b>Calificación</b>${a.calificacion}</div>
+        <div><b>Auditado</b>${esc(a.operador)} (${esc(a.nomina)})</div><div><b>Equipo</b>${esc(a.equipo)} · ${esc(a.coordinador)}</div><div><b>Hallazgos</b>${h.length}${h.length?': '+h.slice(0,3).map(r=>esc(r.comentario)).join('; ')+(h.length>3?'…':''):''}</div>
+        ${a.firma?`<div><b>Firma</b><img src="${a.firma}" alt="Firma"></div>`:''}</div>
+        <button class="btn bd" id="borrar">Eliminar folio ${f}</button>`;
+      $('borrar').onclick=async()=>{
+        const c=prompt(`Para confirmar, escribe el folio ${f}:`); if(c!==f) return;
+        try{
+          await runTransaction(db,async tx=>{
+            const rRef=doc(db,'resumen',a.mes), r=await tx.get(rRef);
+            if(r.exists()){ const l=(r.data().auditorias||[]).filter(x=>String(x.f)!==f); tx.set(rRef,{auditorias:l,actualizado:serverTimestamp()}); }
+            tx.delete(doc(db,'auditorias',f));
+          });
+          toast(`Folio ${f} eliminado`); $('det').innerHTML=''; $('fo').value='';
+        }catch(e){ fallo(e); }
+      };
+    }catch(e){ fallo(e); }
+  };
+  $('buscar').onclick=buscar; $('fo').addEventListener('keydown',e=>{ if(e.key==='Enter') buscar(); });
+}
+</script>
+</body>
+</html>
