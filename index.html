@@ -115,10 +115,6 @@ textarea{min-height:84px;resize:vertical}
         <div class="row"><input id="nomina" inputmode="numeric" autocomplete="off" placeholder="Ej. 1234"><button class="btn b2" id="btnNom" type="button">Validar</button></div>
         <div class="who" id="who" aria-live="polite"></div>
       </div>
-      <div>
-        <label class="f" for="quin">Quincena</label>
-        <select id="quin"><option value="1">1ª quincena</option><option value="2">2ª quincena</option></select>
-      </div>
       <div><label class="f" for="dep">Departamento</label><select id="dep"></select></div>
       <div><label class="f" for="area">Área</label><select id="area"></select></div>
       <div><label class="f" for="coord">Coordinador Lean</label><select id="coord"></select></div>
@@ -187,7 +183,7 @@ const nat = (a,b) => a.localeCompare(b,'es',{numeric:true,sensitivity:'base'});
 
 let db, CAT;
 let st = nuevo();
-function nuevo(){ return {paso:1, nomina:'', operador:'', dep:'', area:'', coord:'', equipo:'', quin: new Date().getDate()<=15?'1':'2', sAct:0, resp:{}, com:{}}; }
+function nuevo(){ return {paso:1, nomina:'', operador:'', dep:'', area:'', coord:'', equipo:'', quin:'1', sAct:0, resp:{}, com:{}}; }
 
 function guardarBorrador(){ try{ if(st.paso<4) localStorage.setItem(KEY, JSON.stringify(st)); }catch(e){} }
 function borrarBorrador(){ try{ localStorage.removeItem(KEY); }catch(e){} }
@@ -207,7 +203,6 @@ function faltantes(){ return CAT.preguntas.filter(p=>st.resp[p.n]==='No' && COME
 function opts(sel, items, val, ph){ sel.innerHTML = `<option value="">${ph}</option>` + items.map(x=>`<option ${x===val?'selected':''}>${esc(x)}</option>`).join(''); }
 function pintarP1(){
   $('nomina').value = st.nomina;
-  $('quin').value = st.quin;
   if(st.operador){ $('who').textContent = '✓ ' + st.operador; $('who').className='who'; }
   const deps = CAT.departamentos;
   $('dep').innerHTML = '<option value="">Selecciona</option>' + deps.map(d=>`<option value="${esc(d)}" ${d===st.dep?'selected':''}>${esc(DEPN[d]||d)}</option>`).join('');
@@ -234,7 +229,6 @@ async function validarNomina(){
 $('btnNom').onclick = validarNomina;
 $('nomina').addEventListener('keydown', e=>{ if(e.key==='Enter') validarNomina(); });
 $('nomina').addEventListener('change', validarNomina);
-$('quin').onchange = e=>{ st.quin=e.target.value; guardarBorrador(); };
 $('dep').onchange = e=>{ st.dep=e.target.value; st.area=''; st.coord=''; st.equipo=''; pintarP1(); guardarBorrador(); actualizarBarra(); };
 $('area').onchange = e=>{ st.area=e.target.value; guardarBorrador(); actualizarBarra(); };
 $('coord').onchange = e=>{ st.coord=e.target.value; st.equipo=''; pintarP1(); guardarBorrador(); actualizarBarra(); };
@@ -281,7 +275,7 @@ function pintarP2(){
 // ---------- Paso 3 ----------
 function pintarP3(){
   const t = total(), ps = puntosS();
-  $('p3sub').textContent = `${st.area} · ${DEPN[st.dep]||st.dep} · Quincena ${st.quin} · Auditado: ${st.operador}`;
+  $('p3sub').textContent = `${st.area} · ${DEPN[st.dep]||st.dep} · Auditado: ${st.operador}`;
   $('rN').textContent = t; $('rN').className = 'n ' + (t>=META?'ok':'mal');
   $('rMeta').textContent = t>=META ? `Cumple la meta de ${META}` : `Debajo de la meta de ${META}`;
   $('rS').innerHTML = SN.map((n,i)=>{ const h=CAT.preguntas.filter(p=>p.s===i && st.resp[p.n]==='No').length; return `<tr><td>${n}</td><td>${h}</td><td>${ps[i]} / ${maxS(i)}</td></tr>`; }).join('');
