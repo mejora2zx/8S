@@ -108,10 +108,10 @@ textarea{min-height:84px;resize:vertical}
   <!-- Paso 1 -->
   <section id="p1">
     <h1>Datos de la auditoría</h1>
-    <p class="sub">Captura tu número de nómina y selecciona el área que vas a auditar.</p>
+    <p class="sub">Captura el número de nómina de la persona auditada y selecciona el área.</p>
     <div class="card grid">
       <div>
-        <label class="f" for="nomina">Número de nómina</label>
+        <label class="f" for="nomina">Nómina del auditado</label>
         <div class="row"><input id="nomina" inputmode="numeric" autocomplete="off" placeholder="Ej. 1234"><button class="btn b2" id="btnNom" type="button">Validar</button></div>
         <div class="who" id="who" aria-live="polite"></div>
       </div>
@@ -281,7 +281,7 @@ function pintarP2(){
 // ---------- Paso 3 ----------
 function pintarP3(){
   const t = total(), ps = puntosS();
-  $('p3sub').textContent = `${st.area} · ${DEPN[st.dep]||st.dep} · Quincena ${st.quin} · Auditor: ${st.operador}`;
+  $('p3sub').textContent = `${st.area} · ${DEPN[st.dep]||st.dep} · Quincena ${st.quin} · Auditado: ${st.operador}`;
   $('rN').textContent = t; $('rN').className = 'n ' + (t>=META?'ok':'mal');
   $('rMeta').textContent = t>=META ? `Cumple la meta de ${META}` : `Debajo de la meta de ${META}`;
   $('rS').innerHTML = SN.map((n,i)=>{ const h=CAT.preguntas.filter(p=>p.s===i && st.resp[p.n]==='No').length; return `<tr><td>${n}</td><td>${h}</td><td>${ps[i]} / ${maxS(i)}</td></tr>`; }).join('');
@@ -380,7 +380,7 @@ $('btnAtras').onclick = ()=>{
   if(st.paso===2){ if(st.sAct>0){ st.sAct--; pintarP2(); actualizarBarra(); window.scrollTo({top:0}); } else irA(1); }
   else if(st.paso===3){ st.sAct=7; irA(2); }
 };
-$('btnNueva').onclick = ()=>{ const n=st.nomina, o=st.operador; st=nuevo(); st.nomina=n; st.operador=o; irA(1); };
+$('btnNueva').onclick = ()=>{ st=nuevo(); $('who').textContent=''; irA(1); };
 
 // ---------- Inicio ----------
 async function iniciar(){
