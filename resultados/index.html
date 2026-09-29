@@ -227,25 +227,25 @@ const shd=(t,sub)=>`<div class="shd"><h2>${t}<span>${sub}</span></h2><img src="$
 // ---------- hojas ----------
 function sheetDep(d,forPrint){
   const D=DEPS[d], au=base({dep:d}), rows=areasDe(D,st.ym);
-  const both=!st.q, fs=Math.min(1.7,Math.max(.95,19/(rows.length+2)));
+  const both=false, fs=Math.min(1.7,Math.max(.95,19/(rows.length+2)));
   const val=(a,q)=>areaProm(au.filter(x=>!q||x.q===q),a);
   const tb=rows.map(r=>{const any=au.some(x=>x.a===r.a);const na=r.activa?'N/A':'En pausa';
     return `<tr class="${forPrint?'':'clic'} ${!forPrint&&st.area===r.a?'sel':''}" data-area="${esc(r.a)}"><td>${esc(r.a)}</td>${both?cell(val(r.a,1),any?'—':na)+cell(val(r.a,2),any?'—':na):''}${cell(val(r.a,0),na)}</tr>`}).join('');
   const pr=depProm(au,D), con=rows.map(r=>({a:r.a,v:val(r.a,0)})).filter(r=>r.v!=null), top=con.length?Math.max(...con.map(r=>r.v)):null;
   const qp=q=>depProm(au.filter(x=>x.q===q),D);
   return `<article class="sheet">${shd(`Resultados 8S · ${DN[D]}`, ymTxt(st.ym)+(filtTxt()?' · '+esc(filtTxt()):''))}
-   <div class="q"><h3 class="qh">Calificación por área</h3><table class="tbl" style="--fs:${fs}cqw"><thead><tr><th>Área</th>${both?'<th>1ª quinc.</th><th>2ª quinc.</th>':''}<th>${both?'Mes':'Quincena '+st.q}</th></tr></thead><tbody>${tb}</tbody>
+   <div class="q"><h3 class="qh">Calificación por área</h3><table class="tbl" style="--fs:${fs}cqw"><thead><tr><th>Área</th>${both?'<th>1ª quinc.</th><th>2ª quinc.</th>':''}<th>Calificación</th></tr></thead><tbody>${tb}</tbody>
     <tfoot><tr><td>Promedio</td>${both?cell(qp(1),'—')+cell(qp(2),'—'):''}${cell(pr)}</tr></tfoot></table></div>
    <div class="q"><h3 class="qh">Línea con mejor resultado</h3><div class="best">${top!=null?`<b>${con.filter(r=>r.v===top).map(r=>esc(r.a)).join(' / ')}</b><em class="${tc(top)}">${f1(top)}</em><small>Meta ${META}</small>`:'<b>Sin auditorías</b>'}</div></div>
    <div class="q"><h3 class="qh">Tendencia ${st.ym.slice(0,4)}</h3><div class="chart">${trendDe(x=>depProm(x.filter(y=>y.d===D),D))}</div></div>
    <div class="q"><h3 class="qh">Calificación por S</h3>${porS(au)}</div></article>`;
 }
 function sheetPlanta(){
-  const au=base({dep:-1}), both=!st.q;
+  const au=base({dep:-1}), both=false;
   const rows=DEPS.map(D=>({D,q1:depProm(au.filter(x=>x.q===1),D),q2:depProm(au.filter(x=>x.q===2),D),t:depProm(au,D)}));
   const tot=plantaProm(au);
   return `<article class="sheet">${shd('Resultados 8S · Planta', ymTxt(st.ym)+(filtTxt()?' · '+esc(filtTxt()):''))}
-   <div class="q"><h3 class="qh">Calificación por departamento</h3><table class="tbl" style="--fs:1.45cqw"><thead><tr><th>Departamento</th>${both?'<th>1ª quinc.</th><th>2ª quinc.</th>':''}<th>${both?'Mes':'Quincena '+st.q}</th></tr></thead>
+   <div class="q"><h3 class="qh">Calificación por departamento</h3><table class="tbl" style="--fs:1.45cqw"><thead><tr><th>Departamento</th>${both?'<th>1ª quinc.</th><th>2ª quinc.</th>':''}<th>Calificación</th></tr></thead>
     <tbody>${rows.map(r=>`<tr><td>${DN[r.D]}</td>${both?cell(r.q1,'—')+cell(r.q2,'—'):''}${cell(r.t)}</tr>`).join('')}</tbody>
     <tfoot><tr><td>Total planta</td>${both?cell(plantaProm(au.filter(x=>x.q===1)),'—')+cell(plantaProm(au.filter(x=>x.q===2)),'—'):''}${cell(tot)}</tr></tfoot></table></div>
    <div class="q"><h3 class="qh">Promedio general de planta</h3><div class="gwrap">${gaugeSVG(tot)}</div></div>
@@ -346,7 +346,7 @@ function vReporte(){
   const au=base(), D=st.dep<0?null:DEPS[st.dep];
   const eqs=[...new Set(au.map(x=>x.eq).filter(Boolean))].map(e=>({e,v:avg(au.filter(x=>x.eq===e).map(x=>x.p))})).sort((a,b)=>b.v-a.v);
   return `<div class="tabs" role="tablist">${['Planta',...DEPS.map(d=>DN[d])].map((n,i)=>`<button class="tab" role="tab" aria-selected="${st.dep===i-1}" data-d="${i-1}">${n}</button>`).join('')}</div>
-  <div class="filters">${filtrosHTML(['q','co','eq'])}
+  <div class="filters">${filtrosHTML(['co','eq'])}
     <div class="acts">${D?'<label class="chk"><input type="checkbox" id="oH" checked> Incluir hallazgos</label>':''}<button class="btn b1" id="pr1">Imprimir hoja</button><button class="btn b3" id="prA">Imprimir todos</button></div></div>
   ${D?sheetDep(st.dep,false):sheetPlanta()}
   <section class="panel"><h2>Promedio por equipo Lean</h2><p class="sub">${ymTxt(st.ym)}${D?' · '+DN[D]:' · Planta'}. Promedio de las auditorías de cada equipo.</p>
@@ -355,7 +355,7 @@ function vReporte(){
 }
 function vHallazgos(){
   const rows=hallRows();
-  return `<div class="filters">${filtrosHTML(['q','dep','area','co','eq','s','txt'])}<div class="acts"><label class="chk"><input type="checkbox" id="oP"> Incluir texto de la pregunta</label><button class="btn b1" id="prH">Imprimir hallazgos</button></div></div>
+  return `<div class="filters">${filtrosHTML(['dep','area','co','eq','s','txt'])}<div class="acts"><label class="chk"><input type="checkbox" id="oP"> Incluir texto de la pregunta</label><button class="btn b1" id="prH">Imprimir hallazgos</button></div></div>
   <section class="panel" style="margin-top:0"><h2>Hallazgos${st.dep<0?' de planta':' de '+DN[DEPS[st.dep]]}${st.area?' · '+esc(st.area):''}</h2><p class="sub">${ymTxt(st.ym)} · ${rows.length} hallazgo${rows.length===1?'':'s'}</p>
   ${rows.length?`<div class="wrap"><table class="list"><thead><tr><th>Área</th><th>Fecha</th><th>S</th><th>Hallazgo</th><th>Equipo</th><th>Coordinador</th></tr></thead><tbody>
    ${rows.map(r=>`<tr><td><b>${esc(r.a)}</b><span class="pq">${DN[r.d]}</span></td><td style="white-space:nowrap">${r.fe.slice(8)}/${r.fe.slice(5,7)}</td><td><span class="chip">${SN[r.s]}</span></td><td>${esc(r.c||'Sin comentario')}<span class="pq">P${r.n}. ${esc(PQ[r.n]||'')}</span></td><td>${esc(r.eq)}</td><td>${esc(r.co)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="sub">No hay hallazgos con estos filtros.</p>'}</section>`;
