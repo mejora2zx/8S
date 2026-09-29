@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Captura Auditoría 8S · Zubex</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#0D18A8;--azul2:#0A1386;--naranja:#FF4E00;--morado:#9631F7;
+  --ok:#2E9E4F;--mal:#D7261E;--bg:#EEF0F7;--panel:#fff;--ink:#141833;--ink2:#50577A;--line:#D5D9E8;
+  --font:"Schibsted Grotesk","Lab Grotesque","Helvetica Neue",Arial,sans-serif;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0E1130;--panel:#181C44;--ink:#EEF0FA;--ink2:#A7ADCF;--line:#2C3163;}}
+:root[data-theme="dark"]{--bg:#0E1130;--panel:#181C44;--ink:#EEF0FA;--ink2:#A7ADCF;--line:#2C3163;}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:18px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--naranja);outline-offset:2px}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--azul);color:#fff}
+.top-in{max-width:1100px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px}
+.brand{font-weight:800;font-size:21px;margin-right:auto;line-height:1.1}
+.brand small{display:block;font-weight:500;font-size:14px;opacity:.8}
+.score{text-align:right;line-height:1.05}
+.score b{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}
+.score small{display:block;font-size:12px;opacity:.8}
+.steps{max-width:1100px;margin:0 auto;padding:0 20px 10px;display:flex;gap:8px}
+.steps span{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.25)}
+.steps span.on{background:var(--naranja)}
+main{max-width:1100px;margin:0 auto;padding:20px 20px 120px}
+h1{font-size:28px;margin:4px 0 4px;letter-spacing:-.01em}
+.sub{color:var(--ink2);margin:0 0 18px;font-size:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px 20px}
+label.f{display:block;font-weight:700;font-size:15px}
+label.f small{font-weight:500;color:var(--ink2)}
+input[type=text],input[type=number],input[inputmode],select,textarea{width:100%;margin-top:6px;border:2px solid var(--line);background:var(--bg);border-radius:10px;padding:12px 14px;min-height:54px}
+textarea{min-height:84px;resize:vertical}
+.row{display:flex;gap:10px;align-items:flex-end}
+.who{margin-top:8px;font-weight:700;color:var(--ok);min-height:24px;font-size:16px}
+.who.err{color:var(--mal)}
+.btn{border:0;border-radius:10px;padding:14px 22px;font-weight:800;cursor:pointer;min-height:56px;font-size:18px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.b1{background:var(--naranja);color:#fff}
+.b2{background:var(--azul);color:#fff}
+.b3{background:transparent;border:2px solid var(--line);color:var(--ink)}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));z-index:9}
+.bar-in{max-width:1100px;margin:0 auto;display:flex;gap:12px;justify-content:space-between;align-items:center}
+.bar-in .msg{color:var(--mal);font-weight:700;font-size:15px;flex:1;text-align:center}
+.stabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;scrollbar-width:thin}
+.stab{flex:0 0 auto;border:2px solid var(--line);background:var(--panel);border-radius:10px;padding:10px 14px;font-weight:700;font-size:15px;cursor:pointer;display:flex;gap:8px;align-items:center}
+.stab[aria-selected=true]{background:var(--azul);border-color:var(--azul);color:#fff}
+.stab .k{font-size:12px;background:var(--mal);color:#fff;border-radius:99px;padding:1px 8px}
+.stab .k.z{background:var(--ok)}
+.stab .k.w{background:#E6A100}
+.q{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:12px;display:grid;grid-template-columns:44px 1fr auto;gap:6px 14px;align-items:start}
+.q.no{border-color:var(--mal);box-shadow:inset 5px 0 0 var(--mal)}
+.num{font-weight:800;font-size:24px;color:var(--azul)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .num{color:#AEB4FF}}
+:root[data-theme="dark"] .num{color:#AEB4FF}
+.txt{font-size:18px}
+.val{font-size:13px;color:var(--ink2);font-weight:600;margin-top:4px}
+.seg{display:flex;border:2px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:0 22px;min-height:56px;min-width:84px;font-weight:800;cursor:pointer}
+.seg button[aria-pressed=true].si{background:var(--ok);color:#fff}
+.seg button[aria-pressed=true].nn{background:var(--mal);color:#fff}
+.com{grid-column:2/4}
+.com textarea.req{border-color:var(--mal)}
+.big{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+.big .n{font-size:72px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.big .n.ok{color:var(--ok)} .big .n.mal{color:var(--mal)}
+.tb{width:100%;border-collapse:collapse;font-size:16px;margin-top:10px}
+.tb td,.tb th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
+.tb td:last-child,.tb th:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.hl{margin:8px 0 0;padding-left:22px}
+.hl li{margin-bottom:6px}
+.hl b{color:var(--mal)}
+.sig{border:2px dashed var(--line);border-radius:12px;background:#fff;touch-action:none;width:100%;height:220px;display:block;margin-top:8px}
+.mt{margin-top:18px}
+.ok-screen{text-align:center;padding:40px 20px}
+.ok-screen .folio{font-size:80px;font-weight:800;color:var(--azul);line-height:1}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .ok-screen .folio{color:#AEB4FF}}
+.overlay{position:fixed;inset:0;background:rgba(10,14,50,.55);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+.overlay.on{display:flex}
+.dlg{background:var(--panel);border-radius:14px;padding:24px;max-width:480px;width:100%}
+.dlg h2{margin:0 0 8px}
+.dlg .row{justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.hide{display:none!important}
+.aviso{background:#FFF1EA;color:#8A2A00;border-radius:10px;padding:14px 16px;font-weight:600;margin-bottom:16px}
+@media (max-width:640px){.q{grid-template-columns:34px 1fr}.seg{grid-column:1/3;justify-self:stretch}.seg button{flex:1}.com{grid-column:1/3}.big .n{font-size:56px}body{font-size:17px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand">Auditoría 8S<small id="hdrSub">Zubex · Mejora Continua</small></div>
+    <div class="score hide" id="hdrScore"><b id="hdrPts">100</b><small>puntos</small></div>
+  </div>
+  <div class="steps" aria-hidden="true"><span id="st1"></span><span id="st2"></span><span id="st3"></span></div>
+</header>
+
+<main>
+  <div class="aviso hide" id="aviso"></div>
+
+  <!-- Paso 1 -->
+  <section id="p1">
+    <h1>Datos de la auditoría</h1>
+    <p class="sub">Captura tu número de nómina y selecciona el área que vas a auditar.</p>
+    <div class="card grid">
+      <div>
+        <label class="f" for="nomina">Número de nómina</label>
+        <div class="row"><input id="nomina" inputmode="numeric" autocomplete="off" placeholder="Ej. 1234"><button class="btn b2" id="btnNom" type="button">Validar</button></div>
+        <div class="who" id="who" aria-live="polite"></div>
+      </div>
+      <div>
+        <label class="f" for="quin">Quincena</label>
+        <select id="quin"><option value="1">1ª quincena</option><option value="2">2ª quincena</option></select>
+      </div>
+      <div><label class="f" for="dep">Departamento</label><select id="dep"></select></div>
+      <div><label class="f" for="area">Área</label><select id="area"></select></div>
+      <div><label class="f" for="coord">Coordinador Lean</label><select id="coord"></select></div>
+      <div><label class="f" for="equipo">Equipo Lean</label><select id="equipo"></select></div>
+    </div>
+  </section>
+
+  <!-- Paso 2 -->
+  <section id="p2" class="hide">
+    <h1 id="sTitle">Seguridad</h1>
+    <p class="sub">Todas las preguntas inician en "Sí". Marca "No" en lo que no se cumpla y describe el hallazgo.</p>
+    <div class="stabs" id="stabs" role="tablist"></div>
+    <div id="qs"></div>
+  </section>
+
+  <!-- Paso 3 -->
+  <section id="p3" class="hide">
+    <h1>Revisión y firma</h1>
+    <p class="sub" id="p3sub"></p>
+    <div class="card">
+      <div class="big"><div class="n" id="rN">100</div><div><b>Calificación</b><br><span class="sub" id="rMeta"></span></div></div>
+      <table class="tb"><thead><tr><th>S</th><th>Hallazgos</th><th>Puntos</th></tr></thead><tbody id="rS"></tbody></table>
+    </div>
+    <div class="card mt"><b>Hallazgos</b><ol class="hl" id="rH"></ol><p class="sub hide" id="rH0" style="margin:8px 0 0">Sin hallazgos.</p></div>
+    <div class="card mt">
+      <div class="row" style="justify-content:space-between;align-items:center"><b>Firma del auditado</b><button class="btn b3" type="button" id="sigClr" style="min-height:44px;padding:8px 16px;font-size:16px">Borrar firma</button></div>
+      <canvas class="sig" id="sig" aria-label="Recuadro de firma"></canvas>
+    </div>
+  </section>
+
+  <!-- Guardado -->
+  <section id="p4" class="hide">
+    <div class="card ok-screen">
+      <p class="sub" style="margin:0 0 8px">Auditoría guardada con el folio</p>
+      <div class="folio" id="okFolio"></div>
+      <p id="okTxt" style="margin:16px 0 26px;font-size:20px"></p>
+      <button class="btn b1" type="button" id="btnNueva">Nueva auditoría</button>
+    </div>
+  </section>
+</main>
+
+<div class="bar" id="bar"><div class="bar-in">
+  <button class="btn b3" type="button" id="btnAtras">Atrás</button>
+  <span class="msg" id="msg" aria-live="polite"></span>
+  <button class="btn b1" type="button" id="btnSig">Siguiente</button>
+</div></div>
+
+<div class="overlay" id="ovl" role="dialog" aria-modal="true" aria-labelledby="dlgT"><div class="dlg">
+  <h2 id="dlgT"></h2><p id="dlgP" style="margin:0"></p>
+  <div class="row"><button class="btn b3" type="button" id="dlgNo"></button><button class="btn b1" type="button" id="dlgSi"></button></div>
+</div></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, runTransaction, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { firebaseConfig } from "./firebase-config.js";
+
+const META = 95;
+const COMENTARIO_OBLIGATORIO = true;   // si es true, cada "No" debe llevar comentario
+const SN = ['Seguridad','SQF-BPM´s','Sustentabilidad','Seleccionar','Ordenar','Limpiar','Estandarizar','Mantener'];
+const DEPN = {'EXTRUSIÓN':'Extrusión','IMPRESIÓN':'Impresión','CONVERSIÓN':'Conversión','CORRUGADO':'Corrugado','CALIDAD':'Calidad','INGENIERÍA':'Ingeniería','ADMINISTRACIÓN PRODUCTIVA':'Admón. Productiva'};
+const KEY = 'aud8s-borrador';
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const nat = (a,b) => a.localeCompare(b,'es',{numeric:true,sensitivity:'base'});
+
+let db, CAT;
+let st = nuevo();
+function nuevo(){ return {paso:1, nomina:'', operador:'', dep:'', area:'', coord:'', equipo:'', quin: new Date().getDate()<=15?'1':'2', sAct:0, resp:{}, com:{}}; }
+
+function guardarBorrador(){ try{ if(st.paso<4) localStorage.setItem(KEY, JSON.stringify(st)); }catch(e){} }
+function borrarBorrador(){ try{ localStorage.removeItem(KEY); }catch(e){} }
+
+function aviso(t){ const a=$('aviso'); a.textContent=t; a.classList.toggle('hide',!t); }
+function dialogo(t,p,si,no){ return new Promise(res=>{ $('dlgT').textContent=t; $('dlgP').textContent=p; $('dlgSi').textContent=si; $('dlgNo').textContent=no; $('ovl').classList.add('on'); $('dlgSi').focus();
+  $('dlgSi').onclick=()=>{ $('ovl').classList.remove('on'); res(true); }; $('dlgNo').onclick=()=>{ $('ovl').classList.remove('on'); res(false); }; }); }
+
+// ---------- Cálculos ----------
+const cumple = n => st.resp[n] !== 'No';
+function puntosS(){ return SN.map((_,i)=>CAT.preguntas.filter(p=>p.s===i).reduce((s,p)=>s+(cumple(p.n)?p.v:0),0)); }
+function total(){ return puntosS().reduce((a,b)=>a+b,0); }
+const maxS = i => CAT.preguntas.filter(p=>p.s===i).reduce((s,p)=>s+p.v,0);
+function faltantes(){ return CAT.preguntas.filter(p=>st.resp[p.n]==='No' && COMENTARIO_OBLIGATORIO && !(st.com[p.n]||'').trim()); }
+
+// ---------- Paso 1 ----------
+function opts(sel, items, val, ph){ sel.innerHTML = `<option value="">${ph}</option>` + items.map(x=>`<option ${x===val?'selected':''}>${esc(x)}</option>`).join(''); }
+function pintarP1(){
+  $('nomina').value = st.nomina;
+  $('quin').value = st.quin;
+  if(st.operador){ $('who').textContent = '✓ ' + st.operador; $('who').className='who'; }
+  const deps = CAT.departamentos;
+  $('dep').innerHTML = '<option value="">Selecciona</option>' + deps.map(d=>`<option value="${esc(d)}" ${d===st.dep?'selected':''}>${esc(DEPN[d]||d)}</option>`).join('');
+  opts($('area'), CAT.areas.filter(a=>a.d===st.dep && a.activa).map(a=>a.a).sort(nat), st.area, st.dep?'Selecciona':'Primero elige departamento');
+  const lideres = [...new Set(CAT.equipos.filter(e=>e.d===st.dep).map(e=>e.l))].sort(nat);
+  if(lideres.length===1 && !st.coord) st.coord = lideres[0];
+  opts($('coord'), lideres, st.coord, st.dep?'Selecciona':'Primero elige departamento');
+  const eqs = CAT.equipos.filter(e=>e.d===st.dep && e.l===st.coord).map(e=>e.e).sort(nat);
+  if(eqs.length===1 && !st.equipo) st.equipo = eqs[0];
+  opts($('equipo'), eqs, st.equipo, st.coord?'Selecciona':'Primero elige coordinador');
+}
+async function validarNomina(){
+  const n = $('nomina').value.replace(/\D/g,'');
+  $('nomina').value = n; st.nomina = n; st.operador = '';
+  if(!n){ $('who').textContent=''; return; }
+  $('who').className='who'; $('who').textContent='Buscando…';
+  try{
+    const s = await getDoc(doc(db,'empleados',n));
+    if(s.exists()){ st.operador = s.data().nombre; $('who').textContent = '✓ ' + st.operador; }
+    else { $('who').className='who err'; $('who').textContent = 'No se encontró esa nómina.'; }
+  }catch(e){ $('who').className='who err'; $('who').textContent='Sin conexión. Revisa la red e intenta de nuevo.'; }
+  guardarBorrador(); actualizarBarra();
+}
+$('btnNom').onclick = validarNomina;
+$('nomina').addEventListener('keydown', e=>{ if(e.key==='Enter') validarNomina(); });
+$('nomina').addEventListener('change', validarNomina);
+$('quin').onchange = e=>{ st.quin=e.target.value; guardarBorrador(); };
+$('dep').onchange = e=>{ st.dep=e.target.value; st.area=''; st.coord=''; st.equipo=''; pintarP1(); guardarBorrador(); actualizarBarra(); };
+$('area').onchange = e=>{ st.area=e.target.value; guardarBorrador(); actualizarBarra(); };
+$('coord').onchange = e=>{ st.coord=e.target.value; st.equipo=''; pintarP1(); guardarBorrador(); actualizarBarra(); };
+$('equipo').onchange = e=>{ st.equipo=e.target.value; guardarBorrador(); actualizarBarra(); };
+const p1Listo = () => st.operador && st.dep && st.area && st.coord && st.equipo && st.quin;
+
+// ---------- Paso 2 ----------
+function pintarTabs(){
+  $('stabs').innerHTML = SN.map((n,i)=>{
+    const ps = CAT.preguntas.filter(p=>p.s===i);
+    const no = ps.filter(p=>st.resp[p.n]==='No').length;
+    const falta = ps.some(p=>st.resp[p.n]==='No' && COMENTARIO_OBLIGATORIO && !(st.com[p.n]||'').trim());
+    return `<button class="stab" role="tab" aria-selected="${i===st.sAct}" data-i="${i}">${n}<span class="k ${falta?'w':(no?'':'z')}">${no}</span></button>`;
+  }).join('');
+  $('stabs').querySelectorAll('.stab').forEach(b=>b.onclick=()=>{ st.sAct=+b.dataset.i; pintarP2(); window.scrollTo({top:0}); });
+  const act = $('stabs').querySelector('[aria-selected=true]'); if(act) act.scrollIntoView({block:'nearest',inline:'center'});
+}
+function pintarP2(){
+  $('sTitle').textContent = SN[st.sAct];
+  pintarTabs();
+  const ps = CAT.preguntas.filter(p=>p.s===st.sAct);
+  $('qs').innerHTML = ps.map(p=>{
+    const no = st.resp[p.n]==='No';
+    const req = no && COMENTARIO_OBLIGATORIO && !(st.com[p.n]||'').trim();
+    return `<div class="q ${no?'no':''}" data-n="${p.n}">
+      <div class="num">${p.n}</div>
+      <div><div class="txt">${esc(p.t)}</div><div class="val">Valor: ${p.v} punto${p.v===1?'':'s'}</div></div>
+      <div class="seg" role="group" aria-label="Cumple pregunta ${p.n}"><button type="button" class="si" aria-pressed="${!no}" data-v="Si">Sí</button><button type="button" class="nn" aria-pressed="${no}" data-v="No">No</button></div>
+      ${no?`<div class="com"><textarea class="${req?'req':''}" placeholder="Describe el hallazgo${COMENTARIO_OBLIGATORIO?' (obligatorio)':''}" aria-label="Hallazgo de la pregunta ${p.n}">${esc(st.com[p.n]||'')}</textarea></div>`:''}
+    </div>`;
+  }).join('');
+  $('qs').querySelectorAll('.q').forEach(q=>{
+    const n = +q.dataset.n;
+    q.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{
+      if(b.dataset.v==='No'){ st.resp[n]='No'; } else { delete st.resp[n]; }
+      pintarP2(); guardarBorrador(); actualizarHdr(); actualizarBarra();
+      if(b.dataset.v==='No'){ const t=$('qs').querySelector(`.q[data-n="${n}"] textarea`); if(t) t.focus(); }
+    });
+    const t = q.querySelector('textarea');
+    if(t) t.oninput = ()=>{ st.com[n]=t.value; t.classList.toggle('req', COMENTARIO_OBLIGATORIO && !t.value.trim()); pintarTabs(); guardarBorrador(); actualizarBarra(); };
+  });
+}
+
+// ---------- Paso 3 ----------
+function pintarP3(){
+  const t = total(), ps = puntosS();
+  $('p3sub').textContent = `${st.area} · ${DEPN[st.dep]||st.dep} · Quincena ${st.quin} · Auditor: ${st.operador}`;
+  $('rN').textContent = t; $('rN').className = 'n ' + (t>=META?'ok':'mal');
+  $('rMeta').textContent = t>=META ? `Cumple la meta de ${META}` : `Debajo de la meta de ${META}`;
+  $('rS').innerHTML = SN.map((n,i)=>{ const h=CAT.preguntas.filter(p=>p.s===i && st.resp[p.n]==='No').length; return `<tr><td>${n}</td><td>${h}</td><td>${ps[i]} / ${maxS(i)}</td></tr>`; }).join('');
+  const hs = CAT.preguntas.filter(p=>st.resp[p.n]==='No');
+  $('rH').innerHTML = hs.map(p=>`<li><b>${SN[p.s]} (${p.n}):</b> ${esc((st.com[p.n]||'').trim()||'Sin comentario')}</li>`).join('');
+  $('rH0').classList.toggle('hide', hs.length>0);
+  setTimeout(ajustarFirma, 0);
+}
+
+// Firma
+const cv = $('sig'), cx = cv.getContext('2d'); let firmado=false, dib=false, last=null;
+function ajustarFirma(){
+  const r = cv.getBoundingClientRect(); if(!r.width) return;
+  const dpr = Math.min(window.devicePixelRatio||1, 2);
+  if(cv.width === Math.round(r.width*dpr)) return;
+  cv.width = Math.round(r.width*dpr); cv.height = Math.round(r.height*dpr);
+  cx.setTransform(dpr,0,0,dpr,0,0); limpiarFirma();
+}
+function limpiarFirma(){ cx.fillStyle='#fff'; cx.fillRect(0,0,cv.width,cv.height); firmado=false; actualizarBarra(); }
+function pos(e){ const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+cv.addEventListener('pointerdown', e=>{ cv.setPointerCapture(e.pointerId); dib=true; last=pos(e); });
+cv.addEventListener('pointermove', e=>{ if(!dib) return; const p=pos(e); cx.strokeStyle='#0D18A8'; cx.lineWidth=2.6; cx.lineCap='round'; cx.lineJoin='round'; cx.beginPath(); cx.moveTo(last.x,last.y); cx.lineTo(p.x,p.y); cx.stroke(); last=p; if(!firmado){ firmado=true; actualizarBarra(); } });
+['pointerup','pointercancel','pointerleave'].forEach(ev=>cv.addEventListener(ev,()=>{ dib=false; }));
+$('sigClr').onclick = limpiarFirma;
+window.addEventListener('resize', ()=>{ if(st.paso===3 && !firmado){ cv.width=0; ajustarFirma(); } });
+function firmaDataURL(){
+  const w=600, h=Math.round(600*cv.height/cv.width); const o=document.createElement('canvas'); o.width=w; o.height=h;
+  const c=o.getContext('2d'); c.fillStyle='#fff'; c.fillRect(0,0,w,h); c.drawImage(cv,0,0,w,h);
+  return o.toDataURL('image/png');
+}
+
+// ---------- Guardar ----------
+function hoyLocal(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+async function guardar(){
+  const btn=$('btnSig'); btn.disabled=true; btn.textContent='Guardando…'; $('msg').textContent='';
+  const fecha=hoyLocal(), mes=fecha.slice(0,7), ps=puntosS(), cal=ps.reduce((a,b)=>a+b,0);
+  const respuestas = CAT.preguntas.map(p=>({n:p.n, s:p.s, cumple:cumple(p.n)?'Si':'No', punto:cumple(p.n)?p.v:0, comentario: cumple(p.n)?'':(st.com[p.n]||'').trim()}));
+  const aud = {fecha, mes, quincena:+st.quin, departamento:st.dep, area:st.area, nomina:st.nomina, operador:st.operador, coordinador:st.coord, equipo:st.equipo,
+               calificacion:cal, puntosS:ps, respuestas, firma:firmaDataURL(), origen:'html'};
+  const resumen = {d:st.dep, a:st.area, fe:fecha, q:+st.quin, p:cal, sp:ps, eq:st.equipo, co:st.coord,
+                   h: respuestas.filter(r=>r.cumple==='No').map(r=>({s:r.s, n:r.n, c:r.comentario}))};
+  try{
+    const folio = await runTransaction(db, async tx=>{
+      const fRef = doc(db,'config','folio'); const fs = await tx.get(fRef);
+      if(!fs.exists()) throw new Error('sin-contador');
+      const folio = fs.data().ultimo + 1;
+      tx.update(fRef, {ultimo: folio});
+      tx.set(doc(db,'auditorias',String(folio)), {...aud, folio, creado: serverTimestamp()});
+      tx.set(doc(db,'resumen',mes), {auditorias: arrayUnion({...resumen, f: folio}), actualizado: serverTimestamp()}, {merge:true});
+      return folio;
+    });
+    borrarBorrador();
+    $('okFolio').textContent = folio;
+    $('okTxt').textContent = `${st.area} · Calificación ${cal}`;
+    irA(4);
+  }catch(e){
+    console.error(e);
+    btn.disabled=false; btn.textContent='Guardar auditoría';
+    $('msg').textContent = !navigator.onLine ? 'Sin conexión. La auditoría sigue guardada en esta tablet; intenta de nuevo al tener red.'
+      : e.message==='sin-contador' ? 'Falta configurar el contador de folios en Firebase.'
+      : 'No se pudo guardar. Intenta de nuevo; la auditoría no se ha perdido.';
+  }
+}
+
+// ---------- Navegación ----------
+function actualizarHdr(){
+  const on = st.paso===2 || st.paso===3;
+  $('hdrScore').classList.toggle('hide', !on); $('hdrPts').textContent = total();
+  $('hdrSub').textContent = st.area && st.paso>1 ? `${st.area} · ${DEPN[st.dep]||st.dep}` : 'Zubex · Mejora Continua';
+  ['st1','st2','st3'].forEach((id,i)=>$(id).classList.toggle('on', st.paso>i));
+}
+function actualizarBarra(){
+  const b=$('btnSig'), a=$('btnAtras'); $('msg').textContent='';
+  $('bar').classList.toggle('hide', st.paso===4);
+  a.style.visibility = st.paso===1 ? 'hidden' : 'visible';
+  if(st.paso===1){ b.textContent='Comenzar preguntas'; b.disabled=!p1Listo(); }
+  if(st.paso===2){ b.textContent = st.sAct<7 ? `Siguiente: ${SN[st.sAct+1]}` : 'Revisar y firmar'; b.disabled=false; a.textContent = st.sAct>0 ? `Atrás: ${SN[st.sAct-1]}` : 'Datos'; }
+  if(st.paso===3){ b.textContent='Guardar auditoría'; b.disabled=!firmado; a.textContent='Preguntas'; if(!firmado) $('msg').textContent='Falta la firma del auditado'; }
+}
+function irA(p){
+  st.paso=p; ['p1','p2','p3','p4'].forEach((id,i)=>$(id).classList.toggle('hide', i!==p-1));
+  if(p===1) pintarP1(); if(p===2) pintarP2(); if(p===3) pintarP3();
+  actualizarHdr(); actualizarBarra(); guardarBorrador(); window.scrollTo({top:0});
+}
+$('btnSig').onclick = ()=>{
+  if(st.paso===1 && p1Listo()) irA(2);
+  else if(st.paso===2){
+    if(st.sAct<7){ st.sAct++; pintarP2(); actualizarBarra(); guardarBorrador(); window.scrollTo({top:0}); return; }
+    const f = faltantes();
+    if(f.length){ st.sAct=f[0].s; pintarP2(); actualizarBarra(); $('msg').textContent=`Falta describir ${f.length} hallazgo${f.length===1?'':'s'}`; window.scrollTo({top:0}); return; }
+    irA(3);
+  }
+  else if(st.paso===3) guardar();
+};
+$('btnAtras').onclick = ()=>{
+  if(st.paso===2){ if(st.sAct>0){ st.sAct--; pintarP2(); actualizarBarra(); window.scrollTo({top:0}); } else irA(1); }
+  else if(st.paso===3){ st.sAct=7; irA(2); }
+};
+$('btnNueva').onclick = ()=>{ const n=st.nomina, o=st.operador; st=nuevo(); st.nomina=n; st.operador=o; irA(1); };
+
+// ---------- Inicio ----------
+async function iniciar(){
+  if(Object.values(firebaseConfig).some(v=>String(v).includes('PEGAR'))){ aviso('Falta pegar la configuración de Firebase en firebase-config.js.'); $('bar').classList.add('hide'); return; }
+  db = getFirestore(initializeApp(firebaseConfig));
+  try{
+    const c = await getDoc(doc(db,'catalogos','general'));
+    if(!c.exists()) throw new Error('sin-catalogo');
+    CAT = c.data(); CAT.preguntas.sort((a,b)=>a.n-b.n);
+  }catch(e){ aviso(e.message==='sin-catalogo' ? 'Aún no se han cargado los catálogos en Firebase (usa importar.html).' : 'No se pudieron cargar los catálogos. Revisa la conexión y recarga la página.'); $('bar').classList.add('hide'); return; }
+  let b=null; try{ b=JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){}
+  if(b && b.area){
+    const seguir = await dialogo('Auditoría sin guardar', `Hay una auditoría de ${b.area} que no se guardó. ¿Quieres continuarla?`, 'Continuar', 'Descartar');
+    if(seguir){ st = {...nuevo(), ...b}; if(st.paso===3){ st.paso=3; } }
+    else borrarBorrador();
+  }
+  irA(st.paso===4 ? 1 : st.paso);
+}
+iniciar();
+</script>
+</body>
+</html>
