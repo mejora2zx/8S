@@ -62,6 +62,17 @@ td.acts .btn{padding:6px 10px;font-size:13px}
 .det{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px 18px;margin:12px 0}
 .det b{display:block;font-size:12px;color:var(--ink2)}
 .det img{max-width:260px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.qe{display:grid;grid-template-columns:34px 1fr auto;gap:6px 12px;align-items:start;padding:10px 0;border-bottom:1px solid var(--line)}
+.qe .n{font-weight:800;color:var(--azul)}
+.qe .t{font-size:14px}.qe .v{font-size:12px;color:var(--ink2)}
+.qe .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.qe .seg button{border:0;background:transparent;padding:6px 14px;font-weight:800;cursor:pointer}
+.qe .seg button[aria-pressed=true].si{background:var(--ok);color:#fff}
+.qe .seg button[aria-pressed=true].no{background:var(--mal);color:#fff}
+.qe input{grid-column:2/4;margin-top:0}
+.qe.nn{box-shadow:inset 4px 0 0 var(--mal);padding-left:8px}
+.sh{font-weight:800;margin-top:16px;color:var(--azul)}
+.cal{font-size:40px;font-weight:800;font-variant-numeric:tabular-nums}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -223,9 +234,55 @@ async function vEqu(P){
   });
 }
 
+// ---------- Editar auditoría ----------
+async function editarAud(f,a){
+  await cargarCat();
+  const P=CAT.preguntas.slice().sort((x,y)=>x.n-y.n), sinDet=!(a.respuestas||[]).length;
+  const R={}; (a.respuestas||[]).forEach(r=>R[r.n]={cumple:r.cumple,comentario:r.comentario||''});
+  P.forEach(p=>{ if(!R[p.n]) R[p.n]={cumple:'Si',comentario:''}; });
+  let calManual=a.calificacion;
+  const calc=()=>{ const sp=SN.map((_,i)=>P.filter(p=>p.s===i).reduce((s,p)=>s+(R[p.n].cumple==='No'?0:p.v),0)); return {sp,cal:sp.reduce((x,y)=>x+y,0)}; };
+  const pintar=()=>{
+    const {cal}=calc(); const faltan=P.filter(p=>R[p.n].cumple==='No'&&!R[p.n].comentario.trim()).length;
+    $('det').innerHTML=`<div class="row" style="align-items:center;justify-content:space-between;margin-top:14px"><div><b>Editando folio ${f}</b> · ${esc(a.area)}<div class="sub" style="margin:0">Calificación anterior: ${a.calificacion}</div></div><div class="cal" id="eCal">${sinDet?calManual:cal}</div></div>
+      ${sinDet?`<label class="f" for="eMan">Calificación (registro sin detalle)</label><input id="eMan" type="number" min="0" max="100" step="1" value="${calManual}" style="max-width:160px">`
+      :SN.map((n,i)=>`<div class="sh">${n}</div>`+P.filter(p=>p.s===i).map(p=>{const r=R[p.n],no=r.cumple==='No';return `<div class="qe ${no?'nn':''}" data-n="${p.n}"><span class="n">${p.n}</span><div><div class="t">${esc(p.t)}</div><div class="v">Valor: ${p.v}</div></div>
+        <div class="seg" role="group" aria-label="Pregunta ${p.n}"><button type="button" class="si" aria-pressed="${!no}">Sí</button><button type="button" class="no" aria-pressed="${no}">No</button></div>
+        ${no?`<input value="${esc(r.comentario)}" placeholder="Describe el hallazgo" aria-label="Hallazgo pregunta ${p.n}">`:''}</div>`}).join('')).join('')}
+      <label class="f" for="eMot">Motivo del cambio</label><input id="eMot" placeholder="Ej. Se corrigió el hallazgo de guardas">
+      <div class="err" id="eErr" aria-live="polite">${faltan?`Falta describir ${faltan} hallazgo${faltan===1?'':'s'}.`:''}</div>
+      <div class="row"><button class="btn b1" id="eSave" ${faltan?'disabled':''}>Guardar cambios</button><button class="btn b3" id="eCan">Cancelar</button></div>`;
+    $('det').querySelectorAll('.qe').forEach(q=>{ const n=+q.dataset.n;
+      q.querySelector('.si').onclick=()=>{ R[n].cumple='Si'; pintar(); };
+      q.querySelector('.no').onclick=()=>{ R[n].cumple='No'; pintar(); const i=$('det').querySelector(`.qe[data-n="${n}"] input`); if(i) i.focus({preventScroll:true}); };
+      const i=q.querySelector('input'); if(i) i.oninput=()=>{ R[n].comentario=i.value; const fl=P.filter(p=>R[p.n].cumple==='No'&&!R[p.n].comentario.trim()).length; $('eErr').textContent=fl?`Falta describir ${fl} hallazgo${fl===1?'':'s'}.`:''; $('eSave').disabled=!!fl; };
+    });
+    const m=$('eMan'); if(m) m.oninput=()=>{ calManual=Math.max(0,Math.min(100,+m.value||0)); $('eCal').textContent=calManual; };
+    $('eCan').onclick=()=>{ $('det').innerHTML=''; };
+    $('eSave').onclick=async()=>{
+      const mot=$('eMot').value.trim()||'Edición desde administración';
+      let upd, ent;
+      if(sinDet){ upd={calificacion:calManual}; ent={p:calManual}; }
+      else{ const {sp,cal}=calc(); const resp=P.map(p=>({n:p.n,s:p.s,cumple:R[p.n].cumple,punto:R[p.n].cumple==='No'?0:p.v,comentario:R[p.n].cumple==='No'?R[p.n].comentario.trim():''}));
+        upd={calificacion:cal,puntosS:sp,respuestas:resp}; ent={p:cal,sp,h:resp.filter(r=>r.cumple==='No').map(r=>({s:r.s,n:r.n,c:r.comentario}))}; }
+      const hist=[...(a.ediciones||[]),{fecha:new Date().toISOString(),motivo:mot,calificacionAnterior:a.calificacion,calificacionNueva:upd.calificacion}];
+      $('eSave').disabled=true;
+      try{
+        await runTransaction(db,async tx=>{
+          const rr=doc(db,'resumen',a.mes), rs=await tx.get(rr); const L=rs.exists()?(rs.data().auditorias||[]):[];
+          tx.update(doc(db,'auditorias',String(f)),{...upd,ediciones:hist});
+          tx.set(rr,{auditorias:L.map(x=>String(x.f)===String(f)?{...x,...ent}:x),actualizado:serverTimestamp()});
+        });
+        Object.assign(a,upd,{ediciones:hist}); toast(`Folio ${f} actualizado: ${upd.calificacion}`); $('det').innerHTML='';
+      }catch(e){ $('eSave').disabled=false; fallo(e); }
+    };
+  };
+  pintar();
+}
+
 // ---------- Auditorías ----------
 function vAud(P){
-  P.innerHTML=`<div class="card"><h2>Eliminar una auditoría</h2><p class="sub">Para borrar auditorías de prueba o capturadas por error. Se quita también de los resultados. Esta acción no se puede deshacer.</p>
+  P.innerHTML=`<div class="card"><h2>Editar o eliminar una auditoría</h2><p class="sub">Busca el folio. <b>Editar</b> permite cambiar respuestas y hallazgos (la calificación se recalcula). <b>Eliminar</b> es para pruebas o capturas por error y no se puede deshacer. Los cambios se reflejan también en resultados.</p>
    <div class="row"><div class="s"><label class="f" for="fo">Folio</label><input id="fo" inputmode="numeric"></div><div style="flex:0 0 auto"><button class="btn b2" id="buscar">Buscar</button></div></div>
    <div class="err" id="fErr" aria-live="polite"></div><div id="det"></div></div>`;
   const buscar=async()=>{
@@ -238,7 +295,8 @@ function vAud(P){
       $('det').innerHTML=`<div class="det"><div><b>Área</b>${esc(a.area)} · ${esc(DN[a.departamento]||a.departamento)}</div><div><b>Fecha</b>${esc(a.fecha)}</div><div><b>Calificación</b>${a.calificacion}</div>
         <div><b>Auditado</b>${esc(a.operador)} (${esc(a.nomina)})</div><div><b>Equipo</b>${esc(a.equipo)} · ${esc(a.coordinador)}</div><div><b>Hallazgos</b>${h.length}${h.length?': '+h.slice(0,3).map(r=>esc(r.comentario)).join('; ')+(h.length>3?'…':''):''}</div>
         ${a.firma?`<div><b>Firma</b><img src="${a.firma}" alt="Firma"></div>`:''}</div>
-        <button class="btn bd" id="borrar">Eliminar folio ${f}</button>`;
+        <div class="row"><button class="btn b2" id="editar">Editar</button><button class="btn bd" id="borrar">Eliminar folio ${f}</button></div>`;
+      $('editar').onclick=()=>editarAud(f,a);
       $('borrar').onclick=async()=>{
         const c=prompt(`Para confirmar, escribe el folio ${f}:`); if(c!==f) return;
         try{
