@@ -108,10 +108,12 @@ main{max-width:1200px;margin:0 auto;padding:20px 20px 60px}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-top:18px}
 .panel h2{margin:0 0 4px;font-size:20px}
 .panel .sub{color:var(--ink2);margin:0 0 12px;font-size:14px}
-.eqs{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px 22px}
-.eq{display:grid;grid-template-columns:1fr 150px 44px;gap:10px;align-items:center;font-size:14px}
-.eq .bar{height:12px;background:var(--bg);border-radius:6px;overflow:hidden}
-.eq .bar i{display:block;height:100%;background:var(--azul)}
+.eqs{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px 28px}
+.eq{display:grid;grid-template-columns:minmax(0,1fr) 44px;grid-template-areas:"n n" "b v";gap:3px 10px;align-items:center;font-size:13px}
+.eq>span{grid-area:n;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eq .bar{grid-area:b;height:10px;background:var(--bg);border-radius:5px;overflow:hidden}
+.eq>b{grid-area:v;font-size:14px}
+.eq .bar i{display:block;height:100%;background:var(--ok)}
 .eq .bar i.m{background:var(--mal)}
 .eq b{text-align:right;font-variant-numeric:tabular-nums}
 .wrap{overflow-x:auto}
@@ -273,6 +275,7 @@ function printHall(rows,titulo,conPreg){
 let PQ={};
 let DB=null; const RC={}; const OPM={};
 async function cargarOp(ym){ if(OPM[ym]) return OPM[ym]; const s=await getDocs(query(collection(DB,'auditorias'),where('mes','==',ym))); const m={}; s.forEach(d=>{const x=d.data(); m[x.folio]=String(x.operador||'').trim();}); return OPM[ym]=m; } const rc={y:'', dep:'', min:'3'};
+const PROMEDIO_MINIMO = 95; // solo entran al reconocimiento quienes tienen promedio MAYOR a este valor
 async function cargarAnio(y){
   if(RC[y]) return RC[y];
   const s=await getDocs(query(collection(DB,'auditorias'),where('mes','>=',y+'-01'),where('mes','<=',y+'-12')));
@@ -283,10 +286,10 @@ const moda=a=>{const c={};a.filter(Boolean).forEach(v=>c[v]=(c[v]||0)+1);return 
 function ranking(l){
   const g={}; l.filter(x=>!rc.dep||x.d===rc.dep).forEach(x=>{const k=x.no||('N:'+x.op); (g[k]||=[]).push(x);});
   return Object.entries(g).map(([k,v])=>({no:k.startsWith('N:')?'':k, op:moda(v.map(x=>x.op))||('Nómina '+k), d:moda(v.map(x=>x.d)), n:v.length, p:avg(v.map(x=>x.p)), mx:Math.max(...v.map(x=>x.p)), ult:v.map(x=>x.fe).sort().pop()}))
-    .filter(r=>r.n>=+rc.min).sort((a,b)=>b.p-a.p||b.n-a.n||b.mx-a.mx);
+    .filter(r=>r.n>=+rc.min && r.p>PROMEDIO_MINIMO).sort((a,b)=>b.p-a.p||b.n-a.n||b.mx-a.mx);
 }
 function tablaRank(rows,print){
-  return `<table class="${print?'ph':'list'}">${print?`<thead><tr><td colspan="7"><div class="phh"><h2>Reconocimiento 8S ${rc.y}<span>Personas auditadas con mayor promedio${rc.dep?' · '+DN[rc.dep]:''} · mínimo ${rc.min} auditoría${rc.min==='1'?'':'s'}</span></h2><img src="${LOGO8S}" alt=""><img src="${LOGOZX}" alt=""></div></td></tr>`:'<thead>'}
+  return `<table class="${print?'ph':'list'}">${print?`<thead><tr><td colspan="7"><div class="phh"><h2>Reconocimiento 8S ${rc.y}<span>Promedio mayor a ${PROMEDIO_MINIMO}${rc.dep?' · '+DN[rc.dep]:''} · mínimo ${rc.min} auditoría${rc.min==='1'?'':'s'}</span></h2><img src="${LOGO8S}" alt=""><img src="${LOGOZX}" alt=""></div></td></tr>`:'<thead>'}
    <tr><th>#</th><th>Auditado</th><th>Nómina</th><th>Departamento</th><th style="text-align:center">Auditorías</th><th style="text-align:center">Promedio</th><th style="text-align:center">Mejor</th></tr></thead><tbody>
    ${rows.map((r,i)=>`<tr${i<3?' style="font-weight:700"':''}><td><span class="rk ${i<3?'r'+(i+1):''}">${i+1}</span></td><td>${esc(r.op)}</td><td>${esc(r.no)}</td><td>${DN[r.d]||esc(r.d)}</td><td style="text-align:center">${r.n}</td><td style="text-align:center" class="${r.p>=META?'okc':'malc'}"><b>${f1(r.p)}</b></td><td style="text-align:center">${f1(r.mx)}</td></tr>`).join('')}</tbody></table>`;
 }
@@ -299,8 +302,8 @@ function vReconocimiento(){
     <div class="acts"><button class="btn b1" id="prR" ${l?'':'disabled'}>Imprimir</button></div></div>`;
   if(!l) return f+'<div class="msg">Cargando auditorías del año…</div>';
   const rows=ranking(l);
-  return f+`<section class="panel" style="margin-top:0"><h2>Reconocimiento ${rc.y}</h2><p class="sub">Personas auditadas ordenadas por promedio de calificación${rc.dep?' en '+DN[rc.dep]:''}. En empate gana quien tiene más auditorías. ${rows.length} persona${rows.length===1?'':'s'} con al menos ${rc.min} auditoría${rc.min==='1'?'':'s'}.</p>
-    ${rows.length?`<div class="wrap">${tablaRank(rows,false)}</div>`:'<p class="sub">Nadie cumple con el mínimo de auditorías seleccionado.</p>'}</section>
+  return f+`<section class="panel" style="margin-top:0"><h2>Reconocimiento ${rc.y}</h2><p class="sub">Personas auditadas con promedio mayor a ${PROMEDIO_MINIMO}${rc.dep?' en '+DN[rc.dep]:''}, ordenadas de mayor a menor. En empate gana quien tiene más auditorías. ${rows.length} persona${rows.length===1?'':'s'} con al menos ${rc.min} auditoría${rc.min==='1'?'':'s'}.</p>
+    ${rows.length?`<div class="wrap">${tablaRank(rows,false)}</div>`:`<p class="sub">Nadie tiene promedio mayor a ${PROMEDIO_MINIMO} con al menos ${rc.min} auditoría${rc.min==='1'?'':'s'}.</p>`}</section>
     <p class="foot2">Se agrupa por número de nómina. El "mínimo de auditorías" evita que alguien con una sola auditoría perfecta quede arriba de quien mantuvo buen nivel todo el año.</p>`;
 }
 
