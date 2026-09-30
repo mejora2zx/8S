@@ -103,6 +103,12 @@ async function propuestas(){
   const R={};
   for(const m of Object.keys(OFICIAL.of)){ const s=await getDoc(doc(db,'resumen',m)); R[m]=s.exists()?(s.data().auditorias||[]):[]; }
   const P=[];
+  // Folios que siguen en resultados aunque la auditoría ya se borró (p. ej. pruebas borradas desde la consola)
+  for(const m of Object.keys(R)){
+    const nuevos=R[m].filter(x=>x.f>2074);
+    for(const x of nuevos){ const s=await getDoc(doc(db,'auditorias',String(x.f))); if(!s.exists()) P.push({t:'quitar',m,f:x.f,a:x.a,p:x.p}); }
+    const q=new Set(P.filter(p=>p.t==='quitar'&&p.m===m).map(p=>p.f)); R[m]=R[m].filter(x=>!q.has(x.f));
+  }
   for(const [m,of] of Object.entries(OFICIAL.of)){
     const L=R[m], by=a=>L.filter(x=>x.a===a), usados=new Set();
     for(const [a,v] of Object.entries(of)){
@@ -126,6 +132,9 @@ async function aplicar(p){
   const rr=doc(db,'resumen',p.m), corr={motivo:MOTIVO, fecha:new Date().toISOString()};
   await runTransaction(db,async tx=>{
     const rs=await tx.get(rr); const L=rs.exists()?(rs.data().auditorias||[]):[];
+    if(p.t==='quitar'){
+      tx.set(rr,{auditorias:L.filter(x=>x.f!==p.f),actualizado:serverTimestamp()});
+    }
     if(p.t==='ajustar'){
       tx.update(doc(db,'auditorias',String(p.f)),{calificacion:p.p, calificacionOriginal:p.de, correccion:corr});
       tx.set(rr,{auditorias:L.map(x=>x.f===p.f?{...x,p:p.p}:x),actualizado:serverTimestamp()});
@@ -146,7 +155,8 @@ async function aplicar(p){
 }
 async function vAju(P){
   const L=await propuestas(), ap=L.filter(p=>p.t!=='revisar'), rv=L.filter(p=>p.t==='revisar');
-  const txt=p=>p.t==='ajustar'?`Cambiar calificación del folio ${p.f}: <b>${p.de} → ${p.p}</b>`
+  const txt=p=>p.t==='quitar'?`Quitar de resultados el folio ${p.f} (${p.p}): la auditoría ya fue borrada`
+    :p.t==='ajustar'?`Cambiar calificación del folio ${p.f}: <b>${p.de} → ${p.p}</b>`
     :p.t==='mover'?`Cambiar el folio ${p.f} de <b>${esc(p.de)}</b> a <b>${esc(p.a)}</b> (${p.p})`
     :`Agregar registro sin detalle con calificación <b>${p.p}</b>`;
   P.innerHTML=`<div class="card"><h2>Ajuste con las calificaciones oficiales</h2>
