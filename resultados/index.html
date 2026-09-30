@@ -43,6 +43,7 @@ main{max-width:1200px;margin:0 auto;padding:20px 20px 60px}
 .b3{background:transparent;border:1px solid var(--line);color:var(--ink)}
 .acts{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;align-items:center}
 .acts label.chk{flex-direction:row;align-items:center;gap:6px;font-weight:600;font-size:14px;color:var(--ink2)}
+.acts label.chk input{min-width:0;width:auto;padding:0}
 .tabs{display:flex;gap:4px;overflow-x:auto;margin-bottom:12px;border-bottom:2px solid var(--line)}
 .tab{background:none;border:0;padding:10px 14px;font-weight:700;color:var(--ink2);cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-2px}
 .tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--naranja)}
@@ -176,7 +177,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const nat=(a,b)=>a.localeCompare(b,'es',{numeric:true,sensitivity:'base'});
 const avg=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:null;
-const f1=v=>v==null?'N/A':(Math.round(v*10)/10).toFixed(Math.abs(v-Math.round(v))<0.05?0:1);
+const f1=v=>{ if(v==null) return 'N/A'; const t=Math.floor(v*10+1e-9)/10; return Number.isInteger(t)?String(t):t.toFixed(1); };
 const tc=v=>v==null?'t-na':(v>=META?'t-ok':'t-mal');
 const cell=(v,txt)=>`<td class="${tc(v)}">${v==null?(txt||'N/A'):`<span class="dot" style="background:${v>=META?'#1E8E3E':'#D7261E'}"></span>${f1(v)}`}</td>`;
 $('lg8').src=LOGO8S;
@@ -191,7 +192,8 @@ function depProm(au,d){ const s=au.filter(x=>x.d===d); return avg([...new Set(s.
 function plantaProm(au){ return avg(DEPS.map(d=>depProm(au,d)).filter(v=>v!=null)); }
 function areasDe(d,ym){ const cat=(CAT.areas||[]).filter(a=>a.d===d); const act=new Map(cat.map(a=>[a.a,a.activa]));
   A.filter(x=>x.d===d&&x.m===ym).forEach(x=>{ if(!act.has(x.a)) act.set(x.a,true); });
-  return [...act.entries()].map(([a,activa])=>({a,activa})).sort((x,y)=>nat(x.a,y.a)); }
+  const conAud=new Set(A.filter(x=>x.d===d&&x.m===ym).map(x=>x.a));
+  return [...act.entries()].map(([a,activa])=>({a,activa})).filter(r=>r.activa||conAud.has(r.a)).sort((x,y)=>nat(x.a,y.a)); }
 const ymTxt=ym=>MESES[+ym.slice(5)-1]+' '+ym.slice(0,4);
 const filtTxt=()=>[st.q?`Quincena ${st.q}`:'',st.co?`Coordinador: ${st.co}`:'',st.eq?`Equipo: ${st.eq}`:''].filter(Boolean).join(' · ');
 
@@ -200,7 +202,7 @@ function trendSVG(vals){
   const W=560,H=250,L=30,B=24,T=22,R=8,min=50,max=100,n=12,bw=(W-L-R)/n;const y=v=>T+(H-T-B)*(1-(Math.max(min,v)-min)/(max-min));
   let g='';[50,60,70,80,90,100].forEach(t=>g+=`<line x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}" stroke="#E3E6F0"/><text x="${L-5}" y="${y(t)+3.5}" font-size="10" text-anchor="end" fill="#8A90A6">${t}</text>`);
   vals.forEach((v,i)=>{const x=L+i*bw+bw*.2,w=bw*.6;
-    if(v!=null) g+=`<rect x="${x}" y="${y(v)}" width="${w}" height="${H-B-y(v)}" fill="${v>=META?'#AEB4F0':'#FFB999'}" stroke="${v>=META?'#0D18A8':'#D7261E'}" stroke-width="1.2" rx="2"/><text x="${x+w/2}" y="${y(v)-5}" font-size="11.5" font-weight="700" text-anchor="middle" fill="#141833">${f1(v)}</text>`;
+    if(v!=null) g+=`<rect x="${x}" y="${y(v)}" width="${w}" height="${H-B-y(v)}" fill="${v>=META?'#7CC990':'#EE7A72'}" stroke="${v>=META?'#1E8E3E':'#C21F17'}" stroke-width="1.2" rx="2"/><text x="${x+w/2}" y="${y(v)-5}" font-size="11.5" font-weight="700" text-anchor="middle" fill="#141833">${f1(v)}</text>`;
     g+=`<text x="${x+w/2}" y="${H-7}" font-size="10.5" text-anchor="middle" fill="#50577A">${MC[i]}</text>`;});
   g+=`<line x1="${L}" x2="${W-R}" y1="${y(META)}" y2="${y(META)}" stroke="#FF4E00" stroke-width="2" stroke-dasharray="6 4"/><text x="${W-R}" y="${y(META)-5}" font-size="10.5" font-weight="700" text-anchor="end" fill="#FF4E00">Meta ${META}</text>`;
   return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Tendencia mensual">${g}</svg>`;
@@ -254,21 +256,23 @@ function sheetPlanta(){
    <div class="q"><h3 class="qh">Calificación por S</h3>${porS(au)}</div></article>`;
 }
 function hallRows(){
-  let rows=base({ym:st.ym}).filter(x=>!st.area||x.a===st.area).flatMap(x=>x.h.map(h=>({...x,s:h.s,n:h.n,c:h.c})));
+  const om=OPM[st.ym]||{};
+  let rows=base({ym:st.ym}).filter(x=>!st.area||x.a===st.area).flatMap(x=>x.h.map(h=>({...x,op:om[x.f]||'',s:h.s,n:h.n,c:h.c})));
   if(st.s!=='') rows=rows.filter(r=>r.s===+st.s);
-  const t=st.txt.toLowerCase(); if(t) rows=rows.filter(r=>(r.c+' '+r.a+' '+r.eq+' '+(PQ[r.n]||'')).toLowerCase().includes(t));
+  const t=st.txt.toLowerCase(); if(t) rows=rows.filter(r=>(r.c+' '+r.a+' '+r.eq+' '+r.op+' '+(PQ[r.n]||'')).toLowerCase().includes(t));
   return rows.sort((x,y)=>DEPS.indexOf(x.d)-DEPS.indexOf(y.d)||nat(x.a,y.a)||x.fe.localeCompare(y.fe)||x.n-y.n);
 }
 function printHall(rows,titulo,conPreg){
   let body='',last='';
-  rows.forEach(r=>{ if(r.a!==last){ last=r.a; const k=rows.filter(x=>x.a===r.a).length; body+=`<tr class="grp"><td colspan="4">${esc(r.a)} · ${DN[r.d]} — ${k} hallazgo${k===1?'':'s'}</td></tr>`; }
+  rows.forEach(r=>{ if(r.a!==last){ last=r.a; const k=rows.filter(x=>x.a===r.a).length; body+=`<tr class="grp"><td colspan="4">${esc(r.a)} · ${DN[r.d]} — ${k} hallazgo${k===1?'':'s'}${r.op?` <span style="font-weight:600;color:#50577A;font-size:10pt">· Auditado: ${esc(r.op)}</span>`:''}</td></tr>`; }
     body+=`<tr><td style="white-space:nowrap">${r.fe.slice(8)}/${r.fe.slice(5,7)}</td><td>${SN[r.s]}</td><td><b>${esc(r.c||'Sin comentario')}</b> <span style="color:#50577A">(P${r.n})</span>${conPreg?`<span class="pq">${esc(PQ[r.n]||'')}</span>`:''}</td><td>${esc(r.eq)}</td></tr>`; });
   if(!rows.length) body='<tr><td colspan="4" style="padding:20px 6px">Sin hallazgos con estos filtros.</td></tr>';
   return `<table class="ph"><thead><tr><td colspan="4"><div class="phh"><h2>${titulo}<span>${ymTxt(st.ym)}${filtTxt()?' · '+esc(filtTxt()):''}</span></h2><img src="${LOGO8S}" alt=""><img src="${LOGOZX}" alt=""></div></td></tr>
     <tr><th style="width:60px">Fecha</th><th style="width:120px">S</th><th>Hallazgo</th><th style="width:150px">Equipo</th></tr></thead><tbody>${body}</tbody></table>`;
 }
 let PQ={};
-let DB=null; const RC={}; const rc={y:'', dep:'', min:'3'};
+let DB=null; const RC={}; const OPM={};
+async function cargarOp(ym){ if(OPM[ym]) return OPM[ym]; const s=await getDocs(query(collection(DB,'auditorias'),where('mes','==',ym))); const m={}; s.forEach(d=>{const x=d.data(); m[x.folio]=String(x.operador||'').trim();}); return OPM[ym]=m; } const rc={y:'', dep:'', min:'3'};
 async function cargarAnio(y){
   if(RC[y]) return RC[y];
   const s=await getDocs(query(collection(DB,'auditorias'),where('mes','>=',y+'-01'),where('mes','<=',y+'-12')));
@@ -358,12 +362,13 @@ function vHallazgos(){
   const rows=hallRows();
   return `<div class="filters">${filtrosHTML(['dep','area','co','eq','s','txt'])}<div class="acts"><label class="chk"><input type="checkbox" id="oP"> Incluir texto de la pregunta</label><button class="btn b1" id="prH">Imprimir hallazgos</button></div></div>
   <section class="panel" style="margin-top:0"><h2>Hallazgos${st.dep<0?' de planta':' de '+DN[DEPS[st.dep]]}${st.area?' · '+esc(st.area):''}</h2><p class="sub">${ymTxt(st.ym)} · ${rows.length} hallazgo${rows.length===1?'':'s'}</p>
-  ${rows.length?`<div class="wrap"><table class="list"><thead><tr><th>Área</th><th>Fecha</th><th>S</th><th>Hallazgo</th><th>Equipo</th><th>Coordinador</th></tr></thead><tbody>
-   ${rows.map(r=>`<tr><td><b>${esc(r.a)}</b><span class="pq">${DN[r.d]}</span></td><td style="white-space:nowrap">${r.fe.slice(8)}/${r.fe.slice(5,7)}</td><td><span class="chip">${SN[r.s]}</span></td><td>${esc(r.c||'Sin comentario')}<span class="pq">P${r.n}. ${esc(PQ[r.n]||'')}</span></td><td>${esc(r.eq)}</td><td>${esc(r.co)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="sub">No hay hallazgos con estos filtros.</p>'}</section>`;
+  ${rows.length?`<div class="wrap"><table class="list"><thead><tr><th>Área</th><th>Fecha</th><th>S</th><th>Hallazgo</th><th>Equipo</th><th>Auditado</th></tr></thead><tbody>
+   ${rows.map(r=>`<tr><td><b>${esc(r.a)}</b><span class="pq">${DN[r.d]}</span></td><td style="white-space:nowrap">${r.fe.slice(8)}/${r.fe.slice(5,7)}</td><td><span class="chip">${SN[r.s]}</span></td><td>${esc(r.c||'Sin comentario')}<span class="pq">P${r.n}. ${esc(PQ[r.n]||'')}</span></td><td>${esc(r.eq)}</td><td>${esc(r.op)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="sub">No hay hallazgos con estos filtros.</p>'}</section>`;
 }
 
 function render(){
   const app=$('app');
+  if(st.v==='hallazgos' && !OPM[st.ym]){ const ym=st.ym; cargarOp(ym).then(()=>{ if(st.v==='hallazgos'&&st.ym===ym) render(); }).catch(e=>console.error(e)); }
   app.innerHTML = st.v==='reporte'?vReporte():st.v==='hallazgos'?vHallazgos():st.v==='reconocimiento'?vReconocimiento():vInicio();
   if(st.v==='reconocimiento'){
     const y=rc.y; if(!RC[y]) cargarAnio(y).then(()=>{ if(st.v==='reconocimiento'&&rc.y===y) render(); }).catch(e=>{console.error(e); $('app').querySelector('.msg').textContent='No se pudieron cargar las auditorías. Recarga la página.';});
@@ -380,8 +385,8 @@ function render(){
   const pa=$('prA'); if(pa) pa.onclick=()=>imprimir(true);
   const ph=$('prH'); if(ph) ph.onclick=()=>{ $('print-root').innerHTML=printHall(hallRows(),'Hallazgos 8S'+(st.dep<0?' · Planta':' · '+DN[DEPS[st.dep]])+(st.area?' · '+esc(st.area):''),$('oP')?.checked); setTimeout(()=>print(),80); };
 }
-function imprimir(todos){
-  const inc=$('oH')?.checked; let h=''; const dep=st.dep, area=st.area;
+async function imprimir(todos){
+  const inc=$('oH')?.checked; if(inc){ try{ await cargarOp(st.ym); }catch(e){ console.error(e); } } let h=''; const dep=st.dep, area=st.area;
   const hallDe=d=>{ st.dep=d; st.area=''; const r=hallRows(); st.dep=dep; st.area=area; return printHall(r,'Hallazgos 8S · '+DN[DEPS[d]]); };
   if(todos){ h=sheetPlanta(); DEPS.forEach((_,d)=>{ const sd=st.dep; st.dep=d; h+=sheetDep(d,true); st.dep=sd; }); }
   else if(dep<0) h=sheetPlanta();
