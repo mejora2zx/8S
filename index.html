@@ -69,6 +69,7 @@ textarea{min-height:84px;resize:vertical}
 .seg button[aria-pressed=true].nn{background:var(--mal);color:#fff}
 .com{grid-column:2/4}
 .com textarea.req{border-color:var(--mal)}
+.com textarea{scroll-margin-top:110px;scroll-margin-bottom:120px}
 .big{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
 .big .n{font-size:72px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
 .big .n.ok{color:var(--ok)} .big .n.mal{color:var(--mal)}
@@ -236,7 +237,7 @@ $('equipo').onchange = e=>{ st.equipo=e.target.value; guardarBorrador(); actuali
 const p1Listo = () => st.operador && st.dep && st.area && st.coord && st.equipo && st.quin;
 
 // ---------- Paso 2 ----------
-function pintarTabs(){
+function pintarTabs(centrar=true){
   $('stabs').innerHTML = SN.map((n,i)=>{
     const ps = CAT.preguntas.filter(p=>p.s===i);
     const no = ps.filter(p=>st.resp[p.n]==='No').length;
@@ -244,7 +245,8 @@ function pintarTabs(){
     return `<button class="stab" role="tab" aria-selected="${i===st.sAct}" data-i="${i}">${n}<span class="k ${falta?'w':(no?'':'z')}">${no}</span></button>`;
   }).join('');
   $('stabs').querySelectorAll('.stab').forEach(b=>b.onclick=()=>{ st.sAct=+b.dataset.i; pintarP2(); window.scrollTo({top:0}); });
-  const act = $('stabs').querySelector('[aria-selected=true]'); if(act) act.scrollIntoView({block:'nearest',inline:'center'});
+  const box=$('stabs'), act=box.querySelector('[aria-selected=true]');
+  if(act && centrar) box.scrollLeft = act.offsetLeft - (box.clientWidth - act.offsetWidth)/2;
 }
 function pintarP2(){
   $('sTitle').textContent = SN[st.sAct];
@@ -265,10 +267,10 @@ function pintarP2(){
     q.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{
       if(b.dataset.v==='No'){ st.resp[n]='No'; } else { delete st.resp[n]; }
       pintarP2(); guardarBorrador(); actualizarHdr(); actualizarBarra();
-      if(b.dataset.v==='No'){ const t=$('qs').querySelector(`.q[data-n="${n}"] textarea`); if(t) t.focus(); }
+      if(b.dataset.v==='No'){ const t=$('qs').querySelector(`.q[data-n="${n}"] textarea`); if(t){ t.focus({preventScroll:true}); t.scrollIntoView({block:'center'}); } }
     });
     const t = q.querySelector('textarea');
-    if(t) t.oninput = ()=>{ st.com[n]=t.value; t.classList.toggle('req', COMENTARIO_OBLIGATORIO && !t.value.trim()); pintarTabs(); guardarBorrador(); actualizarBarra(); };
+    if(t) t.oninput = ()=>{ st.com[n]=t.value; t.classList.toggle('req', COMENTARIO_OBLIGATORIO && !t.value.trim()); pintarTabs(false); guardarBorrador(); actualizarBarra(); };
   });
 }
 
