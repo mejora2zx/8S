@@ -241,10 +241,19 @@ async function editarAud(f,a){
   const R={}; (a.respuestas||[]).forEach(r=>R[r.n]={cumple:r.cumple,comentario:r.comentario||''});
   P.forEach(p=>{ if(!R[p.n]) R[p.n]={cumple:'Si',comentario:''}; });
   let calManual=a.calificacion;
+  const G={nomina:a.nomina||'',operador:a.operador||'',coordinador:a.coordinador||'',equipo:a.equipo||''};
+  const lideres=()=>[...new Set(CAT.equipos.filter(e=>e.d===a.departamento).map(e=>e.l))].sort(nat);
+  const eqsDe=l=>CAT.equipos.filter(e=>e.d===a.departamento&&e.l===l).map(e=>e.e).sort(nat);
+  const opt=(items,v)=>{ const l=items.includes(v)||!v?items:[v,...items]; return '<option value="">Selecciona</option>'+l.map(x=>`<option ${x===v?'selected':''}>${esc(x)}</option>`).join(''); };
   const calc=()=>{ const sp=SN.map((_,i)=>P.filter(p=>p.s===i).reduce((s,p)=>s+(R[p.n].cumple==='No'?0:p.v),0)); return {sp,cal:sp.reduce((x,y)=>x+y,0)}; };
   const pintar=()=>{
     const {cal}=calc(); const faltan=P.filter(p=>R[p.n].cumple==='No'&&!R[p.n].comentario.trim()).length;
     $('det').innerHTML=`<div class="row" style="align-items:center;justify-content:space-between;margin-top:14px"><div><b>Editando folio ${f}</b> · ${esc(a.area)}<div class="sub" style="margin:0">Calificación anterior: ${a.calificacion}</div></div><div class="cal" id="eCal">${sinDet?calManual:cal}</div></div>
+      <div class="sh">Datos generales</div>
+      <div class="row"><div class="s"><label class="f" for="gNo">Nómina del auditado</label><input id="gNo" inputmode="numeric" value="${esc(G.nomina)}"></div>
+        <div><label class="f">Auditado</label><div id="gOp" style="padding:10px 0;font-weight:700">${esc(G.operador)||'—'}</div></div></div>
+      <div class="row"><div><label class="f" for="gCo">Coordinador Lean</label><select id="gCo">${opt(lideres(),G.coordinador)}</select></div>
+        <div><label class="f" for="gEq">Equipo Lean</label><select id="gEq">${opt(eqsDe(G.coordinador),G.equipo)}</select></div></div>
       ${sinDet?`<label class="f" for="eMan">Calificación (registro sin detalle)</label><input id="eMan" type="number" min="0" max="100" step="1" value="${calManual}" style="max-width:160px">`
       :SN.map((n,i)=>`<div class="sh">${n}</div>`+P.filter(p=>p.s===i).map(p=>{const r=R[p.n],no=r.cumple==='No';return `<div class="qe ${no?'nn':''}" data-n="${p.n}"><span class="n">${p.n}</span><div><div class="t">${esc(p.t)}</div><div class="v">Valor: ${p.v}</div></div>
         <div class="seg" role="group" aria-label="Pregunta ${p.n}"><button type="button" class="si" aria-pressed="${!no}">Sí</button><button type="button" class="no" aria-pressed="${no}">No</button></div>
@@ -257,6 +266,10 @@ async function editarAud(f,a){
       q.querySelector('.no').onclick=()=>{ R[n].cumple='No'; pintar(); const i=$('det').querySelector(`.qe[data-n="${n}"] input`); if(i) i.focus({preventScroll:true}); };
       const i=q.querySelector('input'); if(i) i.oninput=()=>{ R[n].comentario=i.value; const fl=P.filter(p=>R[p.n].cumple==='No'&&!R[p.n].comentario.trim()).length; $('eErr').textContent=fl?`Falta describir ${fl} hallazgo${fl===1?'':'s'}.`:''; $('eSave').disabled=!!fl; };
     });
+    $('gNo').onchange=async()=>{ const n=$('gNo').value.replace(/\D/g,''); $('gNo').value=n; if(!n){ G.nomina=''; G.operador=''; $('gOp').textContent='—'; return; }
+      try{ const s=await getDoc(doc(db,'empleados',n)); if(s.exists()){ G.nomina=n; G.operador=s.data().nombre; $('gOp').textContent=G.operador; } else { $('gOp').textContent='No se encontró esa nómina'; } }catch(e){ fallo(e); } };
+    $('gCo').onchange=e=>{ G.coordinador=e.target.value; const l=eqsDe(G.coordinador); G.equipo=l.length===1?l[0]:''; $('gEq').innerHTML=opt(l,G.equipo); };
+    $('gEq').onchange=e=>{ G.equipo=e.target.value; };
     const m=$('eMan'); if(m) m.oninput=()=>{ calManual=Math.max(0,Math.min(100,+m.value||0)); $('eCal').textContent=calManual; };
     $('eCan').onclick=()=>{ $('det').innerHTML=''; };
     $('eSave').onclick=async()=>{
@@ -265,7 +278,10 @@ async function editarAud(f,a){
       if(sinDet){ upd={calificacion:calManual}; ent={p:calManual}; }
       else{ const {sp,cal}=calc(); const resp=P.map(p=>({n:p.n,s:p.s,cumple:R[p.n].cumple,punto:R[p.n].cumple==='No'?0:p.v,comentario:R[p.n].cumple==='No'?R[p.n].comentario.trim():''}));
         upd={calificacion:cal,puntosS:sp,respuestas:resp}; ent={p:cal,sp,h:resp.filter(r=>r.cumple==='No').map(r=>({s:r.s,n:r.n,c:r.comentario}))}; }
-      const hist=[...(a.ediciones||[]),{fecha:new Date().toISOString(),motivo:mot,calificacionAnterior:a.calificacion,calificacionNueva:upd.calificacion}];
+      if(!G.equipo||!G.coordinador){ $('eErr').textContent='Selecciona coordinador y equipo.'; return; }
+      const cambiosG={}; ['nomina','operador','coordinador','equipo'].forEach(k=>{ if((a[k]||'')!==G[k]) cambiosG[k]={antes:a[k]||'',despues:G[k]}; });
+      Object.assign(upd,{nomina:G.nomina,operador:G.operador,coordinador:G.coordinador,equipo:G.equipo}); Object.assign(ent,{eq:G.equipo,co:G.coordinador});
+      const hist=[...(a.ediciones||[]),{fecha:new Date().toISOString(),motivo:mot,calificacionAnterior:a.calificacion,calificacionNueva:upd.calificacion,...(Object.keys(cambiosG).length?{datos:cambiosG}:{})}];
       $('eSave').disabled=true;
       try{
         await runTransaction(db,async tx=>{
@@ -273,7 +289,7 @@ async function editarAud(f,a){
           tx.update(doc(db,'auditorias',String(f)),{...upd,ediciones:hist});
           tx.set(rr,{auditorias:L.map(x=>String(x.f)===String(f)?{...x,...ent}:x),actualizado:serverTimestamp()});
         });
-        Object.assign(a,upd,{ediciones:hist}); toast(`Folio ${f} actualizado: ${upd.calificacion}`); $('det').innerHTML='';
+        Object.assign(a,upd,{ediciones:hist}); toast(`Folio ${f} actualizado`); $('det').innerHTML='';
       }catch(e){ $('eSave').disabled=false; fallo(e); }
     };
   };
