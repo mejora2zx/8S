@@ -216,11 +216,12 @@ function gaugeSVG(v){
    <text x="${cx}" y="${cy-8}" font-size="44" font-weight="800" text-anchor="middle" fill="${col==='#C9CDEA'?'#8A90A6':col}" font-family="Schibsted Grotesk,Arial">${f1(v)}</text>
    <text x="${cx-r}" y="${cy+22}" font-size="12" text-anchor="middle" fill="#8A90A6">0</text><text x="${cx+r}" y="${cy+22}" font-size="12" text-anchor="middle" fill="#8A90A6">100</text></svg>`;
 }
-function porS(au){
+function porS(todas){
+  const au=todas.filter(x=>Array.isArray(x.sp));
   if(!au.length) return '<p class="foot">Sin auditorías con estos filtros.</p>';
   return SN.map((n,i)=>{const t=au.reduce((s,x)=>s+(x.sp?.[i]||0),0),mx=SMAX[i]*au.length,p=mx?t/mx*100:null,h=au.reduce((s,x)=>s+x.h.filter(k=>k.s===i).length,0);
     return `<div class="srow ${p!=null&&p<META?'low':''}"><span>${n}<span class="n">${h} hallazgo${h===1?'':'s'}</span></span><div class="bar"><i style="width:${p??0}%"></i></div><span class="pct">${p==null?'N/A':Math.round(p)+'%'}</span></div>`}).join('')
-    +`<p class="foot">% de puntos obtenidos en ${au.length} auditoría${au.length===1?'':'s'}.</p>`;
+    +`<p class="foot">% de puntos obtenidos en ${au.length} auditoría${au.length===1?'':'s'}${todas.length>au.length?` (${todas.length-au.length} sin detalle no se incluyen)`:''}.</p>`;
 }
 const shd=(t,sub)=>`<div class="shd"><h2>${t}<span>${sub}</span></h2><img src="${LOGO8S}" alt="8S"><img src="${LOGOZX}" alt="Zubex"></div>`;
 
@@ -271,7 +272,7 @@ let DB=null; const RC={}; const rc={y:'', dep:'', min:'3'};
 async function cargarAnio(y){
   if(RC[y]) return RC[y];
   const s=await getDocs(query(collection(DB,'auditorias'),where('mes','>=',y+'-01'),where('mes','<=',y+'-12')));
-  const l=[]; s.forEach(d=>{const x=d.data(); l.push({no:String(x.nomina||'').trim(),op:String(x.operador||'').trim(),d:x.departamento,a:x.area,p:x.calificacion,fe:x.fecha});});
+  const l=[]; s.forEach(d=>{const x=d.data(); if(x.sinDetalle||!(x.nomina||x.operador)) return; l.push({no:String(x.nomina||'').trim(),op:String(x.operador||'').trim(),d:x.departamento,a:x.area,p:x.calificacion,fe:x.fecha});});
   return RC[y]=l;
 }
 const moda=a=>{const c={};a.filter(Boolean).forEach(v=>c[v]=(c[v]||0)+1);return Object.entries(c).sort((x,y)=>y[1]-x[1])[0]?.[0]||'';};
