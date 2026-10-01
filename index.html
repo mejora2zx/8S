@@ -99,12 +99,25 @@ textarea{min-height:84px;resize:vertical}
   <div class="top-in">
     <div class="brand">Auditoría 8S<small id="hdrSub">Zubex · Mejora Continua</small></div>
     <div class="score hide" id="hdrScore"><b id="hdrPts">100</b><small>puntos</small></div>
+    <button class="btn b3 hide" type="button" id="btnSalir" style="min-height:40px;padding:6px 14px;font-size:15px;border-color:rgba(255,255,255,.45);color:#fff">Salir</button>
   </div>
   <div class="steps" aria-hidden="true"><span id="st1"></span><span id="st2"></span><span id="st3"></span></div>
 </header>
 
 <main>
   <div class="aviso hide" id="aviso"></div>
+
+  <!-- Inicio de sesión -->
+  <section id="p0" class="hide">
+    <div class="card" style="max-width:440px;margin:30px auto">
+      <h1>Iniciar sesión</h1>
+      <p class="sub">Captura de auditorías 8S. Solo para personal de Mejora Continua.</p>
+      <label class="f" for="pw">Contraseña</label>
+      <input id="pw" type="password" autocomplete="current-password" style="width:100%;margin-top:6px;border:2px solid var(--line);background:var(--bg);border-radius:10px;padding:12px 14px;min-height:54px">
+      <div class="who err" id="pwErr" aria-live="polite"></div>
+      <button class="btn b1" type="button" id="btnEntrar" style="width:100%;margin-top:8px">Entrar</button>
+    </div>
+  </section>
 
   <!-- Paso 1 -->
   <section id="p1">
@@ -170,6 +183,7 @@ textarea{min-height:84px;resize:vertical}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, runTransaction, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
@@ -178,6 +192,7 @@ const COMENTARIO_OBLIGATORIO = true;   // si es true, cada "No" debe llevar come
 const SN = ['Seguridad','SQF-BPM´s','Sustentabilidad','Seleccionar','Ordenar','Limpiar','Estandarizar','Mantener'];
 const DEPN = {'EXTRUSIÓN':'Extrusión','IMPRESIÓN':'Impresión','CONVERSIÓN':'Conversión','CORRUGADO':'Corrugado','CALIDAD':'Calidad','INGENIERÍA':'Ingeniería','ADMINISTRACIÓN PRODUCTIVA':'Admón. Productiva'};
 const KEY = 'aud8s-borrador';
+const ADMIN_EMAIL = 'n.candia@zubex.com.mx'; // misma cuenta que administración: solo se pide la contraseña
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const nat = (a,b) => a.localeCompare(b,'es',{numeric:true,sensitivity:'base'});
@@ -381,7 +396,13 @@ $('btnNueva').onclick = ()=>{ st=nuevo(); $('who').textContent=''; irA(1); };
 // ---------- Inicio ----------
 async function iniciar(){
   if(Object.values(firebaseConfig).some(v=>String(v).includes('PEGAR'))){ aviso('Falta pegar la configuración de Firebase en firebase-config.js.'); $('bar').classList.add('hide'); return; }
-  db = getFirestore(initializeApp(firebaseConfig));
+  const app = initializeApp(firebaseConfig); db = getFirestore(app); const auth = getAuth(app);
+  $('btnEntrar').onclick = async ()=>{ $('pwErr').textContent=''; try{ await signInWithEmailAndPassword(auth, ADMIN_EMAIL, $('pw').value); $('pw').value=''; }catch(e){ $('pwErr').textContent = e.code==='auth/too-many-requests' ? 'Demasiados intentos. Espera unos minutos.' : 'Contraseña incorrecta.'; } };
+  $('pw').addEventListener('keydown', e=>{ if(e.key==='Enter') $('btnEntrar').click(); });
+  $('btnSalir').onclick = ()=>signOut(auth);
+  const u = await new Promise(res=>{ let first=true; onAuthStateChanged(auth, x=>{ if(first){ first=false; res(x); } else if(!x){ location.reload(); } else { location.reload(); } }); });
+  if(!u){ $('p0').classList.remove('hide'); $('bar').classList.add('hide'); ['p1','p2','p3','p4'].forEach(id=>$(id).classList.add('hide')); $('pw').focus(); return; }
+  $('btnSalir').classList.remove('hide');
   try{
     const c = await getDoc(doc(db,'catalogos','general'));
     if(!c.exists()) throw new Error('sin-catalogo');
