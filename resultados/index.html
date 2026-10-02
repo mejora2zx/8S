@@ -155,6 +155,7 @@ main{max-width:1200px;margin:0 auto;padding:20px 20px 60px}
 .ptab th{background:#0D18A8;color:#fff;font-size:10px;padding:5px 4px;border:1px solid #0D18A8;text-align:left}
 .ptab td{border:1px solid #9AA0C8;padding:2px 5px;height:24px;vertical-align:top;font-size:9.5px;line-height:1.2;word-wrap:break-word}
 .ptab .c{text-align:center}
+.ptab tr.na td{border-top:2px solid #0D18A8}
 .rpage .rtab{min-width:0;font-size:8pt}
 .rpage .rtab td{padding:1.5px 3px}
 .rpage .rtab th{padding:3px}
@@ -167,6 +168,14 @@ main{max-width:1200px;margin:0 auto;padding:20px 20px 60px}
   .ptab tr{break-inside:avoid}
   .ptab th{background:#E4E8FA;color:#0D18A8;border-color:#9AA0C8}
 }
+.tt{display:flex;flex-direction:column;gap:.15cqw}
+.trow{display:grid;grid-template-columns:3.2cqw 9cqw 1fr;gap:.8cqw;align-items:center;font-size:1.12cqw;line-height:1.2;padding:.25cqw 0;border-bottom:.08cqw solid #E1E4F0}
+.trow.th{font-size:.95cqw;color:#50577A;font-weight:700;border-bottom:.12cqw solid #0D18A8}
+.trow .tv{font-weight:800;text-align:center;border-radius:.3cqw;padding:.1cqw 0;border:.12cqw solid #C9CDEA}
+.trow .tv.v4{border-color:#C21F17;color:#C21F17}.trow .tv.v3{border-color:#E06C00;color:#B85A00}
+.trow .ta{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trow .tc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trow .tc b{color:#0D18A8}
 #print-root{display:none}
 .ph{width:100%;border-collapse:collapse;font-family:var(--font);color:#141833;font-size:10.5pt}
 .ph thead td{padding:0 0 8px}
@@ -283,7 +292,14 @@ function sheetDep(d,forPrint){
     <tfoot><tr><td>Promedio</td>${both?cell(qp(1),'—')+cell(qp(2),'—'):''}${cell(pr)}</tr></tfoot></table></div>
    <div class="q"><h3 class="qh">Línea con mejor resultado</h3><div class="best">${top!=null?`<b>${con.filter(r=>r.v===top).map(r=>esc(r.a)).join(' / ')}</b><em class="${tc(top)}">${f1(top)}</em><small>Meta ${META}</small>`:'<b>Sin auditorías</b>'}</div></div>
    <div class="q"><h3 class="qh">Tendencia ${st.ym.slice(0,4)}</h3><div class="chart">${trendDe(x=>depProm(x.filter(y=>y.d===D),D))}</div></div>
-   <div class="q"><h3 class="qh">Calificación por S</h3>${porS(au)}</div></article>`;
+   <div class="q"><h3 class="qh">Top 10 hallazgos</h3>${top10(au)}</div></article>`;
+}
+function top10(au){
+  const pm=Object.fromEntries((CAT.preguntas||[]).map(p=>[p.n,p]));
+  const hs=au.flatMap(x=>x.h.map(h=>({...h,a:x.a,v:pm[h.n]?.v||0}))).sort((x,y)=>y.v-x.v||nat(x.a,y.a)||x.n-y.n);
+  if(!hs.length) return '<p class="foot">Sin hallazgos este mes.</p>';
+  return `<div class="tt"><div class="trow th"><span>Pts</span><span>Área</span><span>Hallazgo</span></div>${hs.slice(0,10).map(h=>`<div class="trow"><span class="tv v${h.v}">${h.v}</span><span class="ta">${esc(h.a)}</span><span class="tc"><b>${SN[h.s]}:</b> ${esc(h.c||'Sin comentario')}</span></div>`).join('')}</div>
+   <p class="foot">${hs.length} hallazgo${hs.length===1?'':'s'} en el mes${hs.length>10?'; se muestran los 10 de mayor valor':''}.</p>`;
 }
 function sheetPlanta(){
   const au=base({dep:-1}), both=false;
@@ -463,19 +479,36 @@ function printResumen(){
 }
 
 // ---------- Plan de acción ----------
-const PLN={dep:-1, eq:'', area:''};
+const PLN={dep:-1, eq:'', area:'', por:'dep'};
 function planAreas(){
   return [...new Set(base({ym:st.ym,dep:PLN.dep,co:'',eq:PLN.eq,q:''}).filter(x=>!PLN.area||x.a===PLN.area).map(x=>x.d+'|'+x.a))]
     .map(k=>{const [d,a]=k.split('|');return {d,a};}).sort((x,y)=>DEPS.indexOf(x.d)-DEPS.indexOf(y.d)||nat(x.a,y.a));
 }
-function miniBarras(d,a){
-  const y=st.ym.slice(0,4), vs=mesesDe(y).map(m=>m<=st.ym?areaMes(a,d,m):null);
+function barrasAnio(vs){
   const W=860,H=150,L=26,B=20,T=16,R=6,min=40,max=100,bw=(W-L-R)/12,ys=v=>T+(H-T-B)*(1-(Math.max(min,v)-min)/(max-min));
   let g='';[40,60,80,100].forEach(t=>g+=`<line x1="${L}" x2="${W-R}" y1="${ys(t)}" y2="${ys(t)}" stroke="#E3E6F0"/><text x="${L-4}" y="${ys(t)+3}" font-size="9" text-anchor="end" fill="#8A90A6">${t}</text>`);
   vs.forEach((v,i)=>{const x=L+i*bw+bw*.2,w=bw*.6; if(v!=null) g+=`<rect x="${x}" y="${ys(v)}" width="${w}" height="${H-B-ys(v)}" fill="${v>=META?'#7CC990':'#EE7A72'}" stroke="${v>=META?'#1E8E3E':'#C21F17'}" rx="2"/><text x="${x+w/2}" y="${ys(v)-4}" font-size="10" font-weight="700" text-anchor="middle" fill="#141833">${f1(v)}</text>`; g+=`<text x="${x+w/2}" y="${H-6}" font-size="9.5" text-anchor="middle" fill="#50577A">${MC[i]}</text>`;});
   g+=`<line x1="${L}" x2="${W-R}" y1="${ys(META)}" y2="${ys(META)}" stroke="#FF4E00" stroke-width="1.6" stroke-dasharray="5 3"/>`;
-  return {svg:`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="img" aria-label="Tendencia del área">${g}</svg>`,vs};
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="img" aria-label="Tendencia del año">${g}</svg>`;
 }
+function miniBarras(d,a){ const vs=mesesDe(st.ym.slice(0,4)).map(m=>m<=st.ym?areaMes(a,d,m):null); return {svg:barrasAnio(vs),vs}; }
+const tablaMes=vs=>`<table class="pmes"><thead><tr><th>Mes</th><th>Meta</th><th>Real</th></tr></thead><tbody>${MC.map((m,i)=>`<tr><td>${m}</td><td>${META}</td><td class="${vs[i]==null?'':vs[i]>=META?'t-ok':'t-mal'}">${vs[i]==null?'':f1(vs[i])}</td></tr>`).join('')}</tbody></table>`;
+function planDeps(){ return DEPS.filter((d,i)=>(PLN.dep<0||PLN.dep===i)&&A.some(x=>x.m===st.ym&&x.d===d&&(!PLN.eq||x.eq===PLN.eq))); }
+function hojaPlanDep(d){
+  const au=A.filter(x=>x.m===st.ym&&x.d===d&&(!PLN.eq||x.eq===PLN.eq)), pm=PMAP(), om=OPM[st.ym]||{};
+  const hs=au.flatMap(x=>x.h.map(h=>({...h,a:x.a}))).sort((x,y)=>nat(x.a,y.a)||x.n-y.n);
+  const cal=PLN.eq?avg(au.map(x=>x.p)):depProm(au,d);
+  const vs=mesesDe(st.ym.slice(0,4)).map(m=>m<=st.ym?(PLN.eq?avg(A.filter(x=>x.m===m&&x.d===d&&x.eq===PLN.eq).map(x=>x.p)):depMes(d,m)):null);
+  const filas=Math.max(10,hs.length); let rows='', last='';
+  for(let i=0;i<filas;i++){ const h=hs[i], p=h?pm[h.n]:null, nuevo=h&&h.a!==last; if(h) last=h.a;
+    rows+=`<tr class="${nuevo&&i?'na':''}"><td class="c">${i+1}</td><td><b>${h?esc(h.a):''}</b></td><td class="eaud">${h?`<b>${SN[h.s]}</b> · P${h.n}. ${esc(p?.t||'')}`:''}</td><td class="c">${h&&p?p.v:''}</td><td class="c">${h&&p?p.v:''}</td><td>${h?esc(h.c||'Sin comentario'):''}</td><td></td><td></td><td></td></tr>`; }
+  return `<article class="pplan">
+   <div class="phh"><h2>Plan de Acción 8S · ${DN[d]}<span>${ymTxt(st.ym)}${PLN.eq?' · Equipo '+esc(PLN.eq):''} · ${new Set(au.map(x=>x.a)).size} área${new Set(au.map(x=>x.a)).size===1?'':'s'} · ${hs.length} hallazgo${hs.length===1?'':'s'}</span></h2><div class="pcal ${cal>=META?'okc':'malc'}">${f1(cal)}<small>Calificación</small></div><img src="${LOGO8S}" alt=""><img src="${LOGOZX}" alt=""></div>
+   <div class="ptop"><div>${barrasAnio(vs)}</div>${tablaMes(vs)}</div>
+   <table class="ptab"><thead><tr><th class="c" style="width:3%">#</th><th style="width:9%">Área</th><th style="width:23%">Elemento auditado</th><th class="c" style="width:4.5%">Valor</th><th class="c" style="width:5.5%">Puntos perdidos</th><th style="width:17%">Oportunidad</th><th style="width:20%">Acción a realizar</th><th style="width:11%">Responsable</th><th style="width:7%">Status</th></tr></thead><tbody>${rows}</tbody></table>
+  </article>`;
+}
+function hojasPlan(){ return PLN.por==='area'||PLN.area ? planAreas().map(x=>hojaPlan(x.d,x.a)) : planDeps().map(hojaPlanDep); }
 const PMAP=()=>Object.fromEntries((CAT.preguntas||[]).map(p=>[p.n,p]));
 function hojaPlan(d,a){
   const au=A.filter(x=>x.m===st.ym&&x.d===d&&x.a===a&&(!PLN.eq||x.eq===PLN.eq));
@@ -486,7 +519,7 @@ function hojaPlan(d,a){
     rows+=`<tr><td class="c">${i+1}</td><td class="eaud">${h?`<b>${SN[h.s]}</b> · P${h.n}. ${esc(p?.t||'')}`:''}</td><td class="c">${h&&p?p.v:''}</td><td class="c">${h&&p?p.v:''}</td><td>${h?esc(h.c||'Sin comentario'):''}</td><td></td><td></td><td></td></tr>`; }
   return `<article class="pplan">
    <div class="phh"><h2>Plan de Acción 8S · ${esc(a)}<span>${ymTxt(st.ym)} · ${DN[d]}${eqs?' · Equipo '+esc(eqs):''}${ops?' · Auditado: '+esc(ops):''}</span></h2><div class="pcal ${cal>=META?'okc':'malc'}">${f1(cal)}<small>Calificación</small></div><img src="${LOGO8S}" alt=""><img src="${LOGOZX}" alt=""></div>
-   <div class="ptop"><div>${svg}</div><table class="pmes"><thead><tr><th>Mes</th><th>Meta</th><th>Real</th></tr></thead><tbody>${MC.map((m,i)=>`<tr><td>${m}</td><td>${META}</td><td class="${vs[i]==null?'':vs[i]>=META?'t-ok':'t-mal'}">${vs[i]==null?'':f1(vs[i])}</td></tr>`).join('')}</tbody></table></div>
+   <div class="ptop"><div>${svg}</div>${tablaMes(vs)}</div>
    <table class="ptab"><thead><tr><th class="c" style="width:3%">#</th><th style="width:27%">Elemento auditado</th><th class="c" style="width:5%">Valor</th><th class="c" style="width:6%">Puntos perdidos</th><th style="width:19%">Oportunidad</th><th style="width:22%">Acción a realizar</th><th style="width:11%">Responsable</th><th style="width:7%">Status</th></tr></thead><tbody>${rows}</tbody></table>
   </article>`;
 }
@@ -494,15 +527,16 @@ function vPlan(){
   const años=[...new Set(A.map(x=>x.m.slice(0,4)))].sort().reverse(), y=st.ym.slice(0,4), ms=[...new Set(A.filter(x=>x.m.startsWith(y)).map(x=>x.m))].sort();
   const pool=A.filter(x=>x.m===st.ym&&(PLN.dep<0||x.d===DEPS[PLN.dep]));
   const eqs=[...new Set(pool.map(x=>x.eq).filter(Boolean))].sort(nat), ars=[...new Set(pool.filter(x=>!PLN.eq||x.eq===PLN.eq).map(x=>x.a))].sort(nat);
-  const lst=planAreas();
+  const lst=hojasPlan();
   return `<div class="filters"><label>Año<select id="fY">${años.map(a=>`<option ${a===y?'selected':''}>${a}</option>`).join('')}</select></label>
     <label>Mes<select id="fM">${ms.map(m=>`<option value="${m}" ${m===st.ym?'selected':''}>${MESES[+m.slice(5)-1]}</option>`).join('')}</select></label>
     <label>Departamento<select id="pD"><option value="">Todos</option>${DEPS.map((d,i)=>`<option value="${i}" ${PLN.dep===i?'selected':''}>${DN[d]}</option>`).join('')}</select></label>
     <label>Equipo Lean<select id="pE"><option value="">Todos</option>${eqs.map(e=>`<option ${e===PLN.eq?'selected':''}>${esc(e)}</option>`).join('')}</select></label>
+    <label>Hoja por<select id="pH"><option value="dep" ${PLN.por==='dep'&&!PLN.area?'selected':''}>Departamento</option><option value="area" ${PLN.por==='area'||PLN.area?'selected':''}>Área</option></select></label>
     <label>Área<select id="pA"><option value="">Todas</option>${ars.map(a=>`<option ${a===PLN.area?'selected':''}>${esc(a)}</option>`).join('')}</select></label>
     <div class="acts"><button class="btn b1" id="prP" ${lst.length?'':'disabled'}>Imprimir ${lst.length} hoja${lst.length===1?'':'s'}</button></div></div>
-   <p class="foot2" style="margin:-4px 0 12px">Una hoja por área con sus hallazgos del mes. Las columnas de acción, responsable y status quedan en blanco para llenarse a mano.</p>
-   ${lst.length?lst.map(x=>`<div class="pwrap">${hojaPlan(x.d,x.a)}</div>`).join(''):'<div class="msg">No hay auditorías con estos filtros.</div>'}`;
+   <p class="foot2" style="margin:-4px 0 12px">${PLN.por==='area'||PLN.area?'Una hoja por área':'Una hoja por departamento con los hallazgos de todas sus áreas'}. Las columnas de acción, responsable y status quedan en blanco para llenarse a mano.</p>
+   ${lst.length?lst.map(h=>`<div class="pwrap">${h}</div>`).join(''):'<div class="msg">No hay auditorías con estos filtros.</div>'}`;
 }
 
 function render(){
@@ -512,8 +546,8 @@ function render(){
   app.innerHTML = st.v==='reporte'?vReporte():st.v==='hallazgos'?vHallazgos():st.v==='reconocimiento'?vReconocimiento():st.v==='resumen'?vResumen():st.v==='plan'?vPlan():vInicio();
   if(st.v==='resumen'){ $('sY').onchange=e=>{rs.y=e.target.value;render();}; $('sD').onchange=e=>{rs.dep=e.target.value;render();}; $('prS').onclick=()=>{ $('print-root').innerHTML=printResumen(); setTimeout(()=>print(),80); }; }
   if(st.v==='plan'){ const on=(id,fn)=>{const e=$(id); if(e) e.onchange=fn;};
-    on('pD',e=>{PLN.dep=e.target.value===''?-1:+e.target.value; PLN.eq=''; PLN.area=''; render();}); on('pE',e=>{PLN.eq=e.target.value; PLN.area=''; render();}); on('pA',e=>{PLN.area=e.target.value; render();});
-    const b=$('prP'); if(b) b.onclick=async()=>{ try{ await cargarOp(st.ym); }catch(e){} $('print-root').innerHTML=planAreas().map(x=>hojaPlan(x.d,x.a)).join(''); setTimeout(()=>print(),80); }; }
+    on('pD',e=>{PLN.dep=e.target.value===''?-1:+e.target.value; PLN.eq=''; PLN.area=''; render();}); on('pE',e=>{PLN.eq=e.target.value; PLN.area=''; render();}); on('pA',e=>{PLN.area=e.target.value; if(PLN.area) PLN.por='area'; render();}); on('pH',e=>{PLN.por=e.target.value; if(PLN.por==='dep') PLN.area=''; render();});
+    const b=$('prP'); if(b) b.onclick=async()=>{ try{ await cargarOp(st.ym); }catch(e){} $('print-root').innerHTML=hojasPlan().join(''); setTimeout(()=>print(),80); }; }
   if(st.v==='reconocimiento'){
     const y=rc.y; if(!RC[y]) cargarAnio(y).then(()=>{ if(st.v==='reconocimiento'&&rc.y===y) render(); }).catch(e=>{console.error(e); $('app').querySelector('.msg').textContent='No se pudieron cargar las auditorías. Recarga la página.';});
     const on=(id,fn)=>{const e=$(id); if(e) e.onchange=fn;};
