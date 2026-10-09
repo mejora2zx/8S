@@ -430,37 +430,45 @@ function vHallazgos(){
 
 // ---------- Resumen anual (tabla por línea y mes) ----------
 const DCOL={'EXTRUSIÓN':'#0D18A8','IMPRESIÓN':'#FF4E00','CONVERSIÓN':'#9631F7','CORRUGADO':'#1E8E3E','CALIDAD':'#0096C7','INGENIERÍA':'#B8860B','ADMINISTRACIÓN PRODUCTIVA':'#D6336C'};
-const rs={y:'', dep:''};
+const rs={y:'', dep:'', eq:''};
+const RA=()=>rs.eq?A.filter(x=>x.eq===rs.eq):A;
+function rAreaMes(a,d,ym){ return avg(RA().filter(x=>x.d===d&&x.a===a&&x.m===ym).map(x=>x.p)); }
+function rDepMes(d,ym){ return depProm(RA().filter(x=>x.m===ym),d); }
+function rPlantaMes(ym){ return rs.eq ? avg([...new Set(RA().filter(x=>x.m===ym).map(x=>x.d+'|'+x.a))].map(k=>{const [d,a]=k.split('|'); return rAreaMes(a,d,ym);})) : plantaProm(A.filter(x=>x.m===ym)); }
+function rDeps(){ const ds=rs.dep?[rs.dep]:DEPS; return rs.eq?ds.filter(d=>RA().some(x=>x.d===d&&x.m.startsWith(rs.y))):ds; }
+const rTitulo=()=>rs.eq?'Equipo '+rs.eq:(rs.dep?DN[rs.dep]:'Planta');
 function mesesDe(y){ return MC.map((_,i)=>y+'-'+String(i+1).padStart(2,'0')); }
 function areaMes(a,d,ym){ return avg(A.filter(x=>x.d===d&&x.a===a&&x.m===ym).map(x=>x.p)); }
 function depMes(d,ym){ return depProm(A.filter(x=>x.m===ym),d); }
 function plantaMes(ym){ return plantaProm(A.filter(x=>x.m===ym)); }
 function areasAnio(d,y){
-  const ms=mesesDe(y), con=new Set(A.filter(x=>x.d===d&&x.m.startsWith(y)).map(x=>x.a));
-  const cat=(CAT.areas||[]).filter(a=>a.d===d&&a.activa).map(a=>a.a);
+  const ms=mesesDe(y), con=new Set(RA().filter(x=>x.d===d&&x.m.startsWith(y)).map(x=>x.a));
+  const cat=rs.eq?[]:(CAT.areas||[]).filter(a=>a.d===d&&a.activa).map(a=>a.a);
   return [...new Set([...cat,...con])].sort(nat);
 }
 const rcell=v=>v==null?'<td class="rz"></td>':`<td class="rz ${v>=META?'rv':'rr'}">${f1(v)}</td>`;
 function tablaResumen(){
-  const y=rs.y, ms=mesesDe(y), deps=rs.dep?[rs.dep]:DEPS;
+  const y=rs.y, ms=mesesDe(y), deps=rDeps();
   let b='';
   deps.forEach(d=>{
     b+=`<tr class="rgr"><td colspan="14">${DN[d]}</td></tr>`;
-    areasAnio(d,y).forEach(a=>{ const vs=ms.map(m=>areaMes(a,d,m)); b+=`<tr><td class="ra">${esc(a)}</td>${vs.map(rcell).join('')}${rcell(avg(vs.filter(v=>v!=null)))}</tr>`; });
-    const dv=ms.map(m=>depMes(d,m)); b+=`<tr class="rdp"><td class="ra">Resultado ${DN[d]}</td>${dv.map(rcell).join('')}${rcell(avg(dv.filter(v=>v!=null)))}</tr>`;
+    areasAnio(d,y).forEach(a=>{ const vs=ms.map(m=>rAreaMes(a,d,m)); b+=`<tr><td class="ra">${esc(a)}</td>${vs.map(rcell).join('')}${rcell(avg(vs.filter(v=>v!=null)))}</tr>`; });
+    if(rs.eq&&deps.length===1) return;
+    const dv=ms.map(m=>rDepMes(d,m)); b+=`<tr class="rdp"><td class="ra">Resultado ${DN[d]}${rs.eq?' · '+esc(rs.eq):''}</td>${dv.map(rcell).join('')}${rcell(avg(dv.filter(v=>v!=null)))}</tr>`;
   });
-  if(!rs.dep){ const pv=ms.map(plantaMes); b+=`<tr class="rpl"><td class="ra">Resultado planta</td>${pv.map(rcell).join('')}${rcell(avg(pv.filter(v=>v!=null)))}</tr>`; }
+  if(rs.eq||!rs.dep){ const pv=ms.map(rPlantaMes); b+=`<tr class="rpl"><td class="ra">${rs.eq?'Resultado '+esc(rs.eq):'Resultado planta'}</td>${pv.map(rcell).join('')}${rcell(avg(pv.filter(v=>v!=null)))}</tr>`; }
   return `<table class="rtab"><thead><tr><th class="ra">Área</th>${MC.map(m=>`<th>${m}</th>`).join('')}<th>Anual</th></tr></thead><tbody>${b}</tbody></table>`;
 }
 function lineasSVG(){
-  const y=rs.y, ms=mesesDe(y), deps=rs.dep?[rs.dep]:DEPS;
-  const todos=[...deps.flatMap(d=>ms.map(m=>depMes(d,m))),...ms.map(plantaMes)].filter(v=>v!=null), min=Math.max(0,Math.min(80,Math.floor((Math.min(...todos,100)-3)/10)*10));
+  const y=rs.y, ms=mesesDe(y), deps=rs.eq?[]:(rs.dep?[rs.dep]:DEPS);
+  const todos=[...deps.flatMap(d=>ms.map(m=>rDepMes(d,m))),...ms.map(rPlantaMes)].filter(v=>v!=null), min=Math.max(0,Math.min(80,Math.floor((Math.min(...todos,100)-3)/10)*10));
   const W=900,H=320,L=36,R=12,T=16,B=28,max=100,xs=i=>L+(W-L-R)*(i+.5)/12,ys=v=>T+(H-T-B)*(1-(Math.max(min,v)-min)/(max-min));
   let g='';[0,10,20,30,40,50,60,70,80,90,100].filter(v=>v>=min).forEach(t=>g+=`<line x1="${L}" x2="${W-R}" y1="${ys(t)}" y2="${ys(t)}" stroke="#E3E6F0"/><text x="${L-6}" y="${ys(t)+4}" font-size="11" text-anchor="end" fill="#8A90A6">${t}</text>`);
   MC.forEach((m,i)=>g+=`<text x="${xs(i)}" y="${H-8}" font-size="11" text-anchor="middle" fill="#50577A">${m}</text>`);
   g+=`<line x1="${L}" x2="${W-R}" y1="${ys(META)}" y2="${ys(META)}" stroke="#FF4E00" stroke-width="2" stroke-dasharray="6 4"/><text x="${W-R}" y="${ys(META)-6}" font-size="11" font-weight="700" text-anchor="end" fill="#FF4E00">Meta ${META}</text>`;
-  const series=deps.map(d=>({n:DN[d],c:DCOL[d],v:ms.map(m=>depMes(d,m))}));
-  if(!rs.dep) series.push({n:'Planta',c:'#141833',v:ms.map(plantaMes),w:3.5});
+  const series=deps.map(d=>({n:DN[d],c:DCOL[d],v:ms.map(m=>rDepMes(d,m))}));
+  if(rs.eq) series.push({n:rs.eq,c:'#0D18A8',v:ms.map(rPlantaMes),w:3.5});
+  else if(!rs.dep) series.push({n:'Planta',c:'#141833',v:ms.map(plantaMes),w:3.5});
   series.forEach(s=>{ let pth='',pen=false; s.v.forEach((v,i)=>{ if(v==null){pen=false;return;} pth+=(pen?'L':'M')+xs(i)+' '+ys(v)+' '; pen=true; });
     g+=`<path d="${pth}" fill="none" stroke="${s.c}" stroke-width="${s.w||2.2}" stroke-linejoin="round"/>`+s.v.map((v,i)=>v==null?'':`<circle cx="${xs(i)}" cy="${ys(v)}" r="${s.w?4:3}" fill="${s.c}"/>`).join('');
     if(rs.dep||s.w) g+=s.v.map((v,i)=>v==null?'':`<text x="${xs(i)}" y="${ys(v)-8}" font-size="11" font-weight="700" text-anchor="middle" fill="${s.c}">${f1(v)}</text>`).join(''); });
@@ -471,12 +479,13 @@ function vResumen(){
   const años=[...new Set(A.map(x=>x.m.slice(0,4)))].sort().reverse(); if(!rs.y) rs.y=años[0];
   return `<div class="filters"><label>Año<select id="sY">${años.map(a=>`<option ${a===rs.y?'selected':''}>${a}</option>`).join('')}</select></label>
     <label>Departamento<select id="sD"><option value="">Todos</option>${DEPS.map(d=>`<option value="${d}" ${d===rs.dep?'selected':''}>${DN[d]}</option>`).join('')}</select></label>
+    <label>Equipo Lean<select id="sE"><option value="">Todos</option>${[...new Set(A.filter(x=>x.m.startsWith(rs.y)&&(!rs.dep||x.d===rs.dep)).map(x=>x.eq).filter(Boolean))].sort(nat).map(e=>`<option ${e===rs.eq?'selected':''}>${esc(e)}</option>`).join('')}</select></label>
     <div class="acts"><button class="btn b1" id="prS">Imprimir resumen</button></div></div>
-  <section class="panel" style="margin-top:0"><h2>Tendencia ${rs.y}${rs.dep?' · '+DN[rs.dep]:' por departamento'}</h2><p class="sub">Promedio mensual. La línea gruesa es el resultado de planta.</p><div class="chartbox">${lineasSVG()}</div></section>
-  <section class="panel"><h2>Calificaciones ${rs.y} por línea</h2><p class="sub">Verde: cumple la meta de ${META}. Rojo: debajo de la meta. Vacío: sin auditoría ese mes.</p><div class="wrap">${tablaResumen()}</div></section>`;
+  <section class="panel" style="margin-top:0"><h2>Tendencia ${rs.y}${rs.eq?' · Equipo '+esc(rs.eq):rs.dep?' · '+DN[rs.dep]:' por departamento'}</h2><p class="sub">${rs.eq?'Promedio mensual de las áreas auditadas con este equipo.':'Promedio mensual. La línea gruesa es el resultado de planta.'}</p><div class="chartbox">${lineasSVG()}</div></section>
+  <section class="panel"><h2>Calificaciones ${rs.y} por línea${rs.eq?' · Equipo '+esc(rs.eq):''}</h2><p class="sub">${rs.eq?'Solo las auditorías registradas con este equipo. ':''}Verde: cumple la meta de ${META}. Rojo: debajo de la meta. Vacío: sin auditoría ese mes.</p><div class="wrap">${tablaResumen()}</div></section>`;
 }
 function printResumen(){
-  const hd=t=>`<div class="phh"><h2>${t}<span>${rs.dep?DN[rs.dep]:'Planta'} · Meta ${META}</span></h2><img src="${LOGO8S}" alt=""><img src="${LOGOZX}" alt=""></div>`;
+  const hd=t=>`<div class="phh"><h2>${t}<span>${esc(rTitulo())}${rs.eq&&rs.dep?' · '+DN[rs.dep]:''} · Meta ${META}</span></h2><img src="${LOGO8S}" alt=""><img src="${LOGOZX}" alt=""></div>`;
   return `<div class="rpage">${hd('Resumen 8S '+rs.y)}<div class="rprint">${tablaResumen()}</div></div><div class="rpage">${hd('Tendencia 8S '+rs.y)}<div style="margin-top:14px">${lineasSVG()}</div></div>`;
 }
 
@@ -507,7 +516,7 @@ function hojaPlanDep(d){
   return `<article class="pplan">
    <div class="phh"><h2>Plan de Acción 8S · ${DN[d]}<span>${ymTxt(st.ym)}${PLN.eq?' · Equipo '+esc(PLN.eq):''} · ${new Set(au.map(x=>x.a)).size} área${new Set(au.map(x=>x.a)).size===1?'':'s'} · ${hs.length} hallazgo${hs.length===1?'':'s'}</span></h2><div class="pcal ${cal>=META?'okc':'malc'}">${f1(cal)}<small>Calificación</small></div><img src="${LOGO8S}" alt=""><img src="${LOGOZX}" alt=""></div>
    <div class="ptop"><div>${barrasAnio(vs)}</div>${tablaMes(vs)}</div>
-   <table class="ptab"><thead><tr><th class="c" style="width:3%">#</th><th style="width:9%">Área</th><th style="width:23%">Elemento auditado</th><th class="c" style="width:4.5%">Valor</th><th class="c" style="width:5.5%">Puntos perdidos</th><th style="width:17%">Oportunidad</th><th style="width:20%">Acción a realizar</th><th style="width:11%">Responsable</th><th style="width:7%">Status</th></tr></thead><tbody>${rows}</tbody></table>
+   <table class="ptab"><thead><tr><th class="c" style="width:3%">#</th><th style="width:9%">Área</th><th style="width:23%">Elemento auditado</th><th class="c" style="width:4.5%">Valor</th><th class="c" style="width:5.5%">Puntos perdidos</th><th style="width:17%">Oportunidad</th><th style="width:18%">Acción a realizar</th><th style="width:11%">Responsable</th><th class="c" style="width:9%">Fecha compromiso</th></tr></thead><tbody>${rows}</tbody></table>
   </article>`;
 }
 function hojasPlan(){ return PLN.por==='area'||PLN.area ? planAreas().map(x=>hojaPlan(x.d,x.a)) : planDeps().map(hojaPlanDep); }
@@ -522,7 +531,7 @@ function hojaPlan(d,a){
   return `<article class="pplan">
    <div class="phh"><h2>Plan de Acción 8S · ${esc(a)}<span>${ymTxt(st.ym)} · ${DN[d]}${eqs?' · Equipo '+esc(eqs):''}${ops?' · Auditado: '+esc(ops):''}</span></h2><div class="pcal ${cal>=META?'okc':'malc'}">${f1(cal)}<small>Calificación</small></div><img src="${LOGO8S}" alt=""><img src="${LOGOZX}" alt=""></div>
    <div class="ptop"><div>${svg}</div>${tablaMes(vs)}</div>
-   <table class="ptab"><thead><tr><th class="c" style="width:3%">#</th><th style="width:27%">Elemento auditado</th><th class="c" style="width:5%">Valor</th><th class="c" style="width:6%">Puntos perdidos</th><th style="width:19%">Oportunidad</th><th style="width:22%">Acción a realizar</th><th style="width:11%">Responsable</th><th style="width:7%">Status</th></tr></thead><tbody>${rows}</tbody></table>
+   <table class="ptab"><thead><tr><th class="c" style="width:3%">#</th><th style="width:27%">Elemento auditado</th><th class="c" style="width:5%">Valor</th><th class="c" style="width:6%">Puntos perdidos</th><th style="width:19%">Oportunidad</th><th style="width:20%">Acción a realizar</th><th style="width:11%">Responsable</th><th class="c" style="width:9%">Fecha compromiso</th></tr></thead><tbody>${rows}</tbody></table>
   </article>`;
 }
 function vPlan(){
@@ -537,7 +546,7 @@ function vPlan(){
     <label>Hoja por<select id="pH"><option value="dep" ${PLN.por==='dep'&&!PLN.area?'selected':''}>Departamento</option><option value="area" ${PLN.por==='area'||PLN.area?'selected':''}>Área</option></select></label>
     <label>Área<select id="pA"><option value="">Todas</option>${ars.map(a=>`<option ${a===PLN.area?'selected':''}>${esc(a)}</option>`).join('')}</select></label>
     <div class="acts"><button class="btn b1" id="prP" ${lst.length?'':'disabled'}>Imprimir ${lst.length} hoja${lst.length===1?'':'s'}</button></div></div>
-   <p class="foot2" style="margin:-4px 0 12px">${PLN.por==='area'||PLN.area?'Una hoja por área':'Una hoja por departamento con los hallazgos de todas sus áreas'}. Las columnas de acción, responsable y status quedan en blanco para llenarse a mano.</p>
+   <p class="foot2" style="margin:-4px 0 12px">${PLN.por==='area'||PLN.area?'Una hoja por área':'Una hoja por departamento con los hallazgos de todas sus áreas'}. Las columnas de acción, responsable y fecha compromiso quedan en blanco para llenarse a mano.</p>
    ${lst.length?lst.map(h=>`<div class="pwrap">${h}</div>`).join(''):'<div class="msg">No hay auditorías con estos filtros.</div>'}`;
 }
 
@@ -546,7 +555,7 @@ function render(){
   if(st.v==='hallazgos' && !OPM[st.ym]){ const ym=st.ym; cargarOp(ym).then(()=>{ if(st.v==='hallazgos'&&st.ym===ym) render(); }).catch(e=>console.error(e)); }
   if(st.v==='plan' && !OPM[st.ym]){ const ym=st.ym; cargarOp(ym).then(()=>{ if(st.v==='plan'&&st.ym===ym) render(); }).catch(e=>console.error(e)); }
   app.innerHTML = st.v==='reporte'?vReporte():st.v==='hallazgos'?vHallazgos():st.v==='reconocimiento'?vReconocimiento():st.v==='resumen'?vResumen():st.v==='plan'?vPlan():vInicio();
-  if(st.v==='resumen'){ $('sY').onchange=e=>{rs.y=e.target.value;render();}; $('sD').onchange=e=>{rs.dep=e.target.value;render();}; $('prS').onclick=()=>{ $('print-root').innerHTML=printResumen(); setTimeout(()=>print(),80); }; }
+  if(st.v==='resumen'){ $('sY').onchange=e=>{rs.y=e.target.value; if(rs.eq&&!A.some(x=>x.eq===rs.eq&&x.m.startsWith(rs.y))) rs.eq=''; render();}; $('sD').onchange=e=>{rs.dep=e.target.value; if(rs.eq&&!A.some(x=>x.eq===rs.eq&&x.m.startsWith(rs.y)&&(!rs.dep||x.d===rs.dep))) rs.eq=''; render();}; $('sE').onchange=e=>{rs.eq=e.target.value;render();}; $('prS').onclick=()=>{ $('print-root').innerHTML=printResumen(); setTimeout(()=>print(),80); }; }
   if(st.v==='plan'){ const on=(id,fn)=>{const e=$(id); if(e) e.onchange=fn;};
     on('pD',e=>{PLN.dep=e.target.value===''?-1:+e.target.value; PLN.eq=''; PLN.area=''; render();}); on('pE',e=>{PLN.eq=e.target.value; PLN.area=''; render();}); on('pA',e=>{PLN.area=e.target.value; if(PLN.area) PLN.por='area'; render();}); on('pH',e=>{PLN.por=e.target.value; if(PLN.por==='dep') PLN.area=''; render();});
     const b=$('prP'); if(b) b.onclick=async()=>{ try{ await cargarOp(st.ym); }catch(e){} $('print-root').innerHTML=hojasPlan().join(''); setTimeout(()=>print(),80); }; }
