@@ -26,6 +26,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 .top-in{max-width:1100px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px}
 .brand{font-weight:800;font-size:21px;margin-right:auto;line-height:1.1}
 .brand small{display:block;font-weight:500;font-size:14px;opacity:.8}
+.brand .fmt{display:inline-block;margin-left:12px;padding:2px 8px;border:1px solid rgba(255,255,255,.45);border-radius:6px;font-size:13px;font-weight:600;letter-spacing:.02em;vertical-align:3px;white-space:nowrap}
+@media (max-width:640px){.brand .fmt{display:block;margin:4px 0 2px;width:max-content;font-size:12px}}
 .score{text-align:right;line-height:1.05}
 .score b{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}
 .score small{display:block;font-size:12px;opacity:.8}
@@ -99,7 +101,7 @@ textarea{min-height:84px;resize:vertical}
 <body>
 <header class="top">
   <div class="top-in">
-    <div class="brand">Auditoría 8S<small id="hdrSub">Zubex · Mejora Continua</small></div>
+    <div class="brand">Auditoría 8S<span class="fmt">MEJ-F-14 Auditoría 8S Rev. 09</span><small id="hdrSub">Zubex · Mejora Continua</small></div>
     <div class="score hide" id="hdrScore"><b id="hdrPts">100</b><small>puntos</small></div>
     <button class="btn b3 hide" type="button" id="btnSalir" style="min-height:40px;padding:6px 14px;font-size:15px;border-color:rgba(255,255,255,.45);color:#fff">Salir</button>
   </div>
