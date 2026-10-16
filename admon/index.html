@@ -95,6 +95,7 @@ td.acts .btn{padding:6px 10px;font-size:13px}
       <button class="tab" role="tab" data-t="are" aria-selected="false">Áreas</button>
       <button class="tab" role="tab" data-t="equ" aria-selected="false">Equipos Lean</button>
       <button class="tab" role="tab" data-t="aud" aria-selected="false">Auditorías</button>
+      <button class="tab" role="tab" data-t="pla" aria-selected="false">Planes de acción</button>
     </div>
     <div id="panel"></div>
   </section>
@@ -103,7 +104,7 @@ td.acts .btn{padding:6px 10px;font-size:13px}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, getDocs, doc, getDoc, setDoc, deleteDoc, updateDoc, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, getDoc, setDoc, deleteDoc, updateDoc, runTransaction, serverTimestamp, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from "../firebase-config.js";
 
 // Cuenta de administración creada en Firebase Authentication. Solo se pide la contraseña.
@@ -136,7 +137,7 @@ async function guardarCat(campo){ await updateDoc(doc(db,'catalogos','general'),
 
 async function render(){
   const P=$('panel'); P.innerHTML='<div class="card">Cargando…</div>';
-  try{ if(tab==='per') await vPer(P); if(tab==='are') await vAre(P); if(tab==='equ') await vEqu(P); if(tab==='aud') vAud(P); }
+  try{ if(tab==='per') await vPer(P); if(tab==='are') await vAre(P); if(tab==='equ') await vEqu(P); if(tab==='aud') vAud(P); if(tab==='pla') vPla(P); }
   catch(e){ console.error(e); P.innerHTML=`<div class="card">${e.code==='permission-denied'?'Tu cuenta no tiene permiso de administración. Pide que la agreguen a las reglas de Firestore.':'No se pudo cargar la información. Recarga la página.'}</div>`; }
 }
 
@@ -296,6 +297,44 @@ async function editarAud(f,a){
     };
   };
   pintar();
+}
+
+// ---------- Planes de acción (liberar registros con error) ----------
+const fdmyA=s=>s?s.slice(8)+'/'+s.slice(5,7)+'/'+s.slice(0,4):'';
+const ftsA=ts=>{ try{ const d=ts?.toDate?ts.toDate():null; return d?d.toLocaleString('es-MX',{dateStyle:'short',timeStyle:'short'}):''; }catch(e){ return ''; } };
+function vPla(P){
+  P.innerHTML=`<div class="card"><h2>Planes de acción</h2><p class="sub">Los planes que registran los equipos no se pueden modificar. Si alguno tiene un error, búscalo por folio y libéralo: <b>Quitar cierre</b> borra solo la fecha de cierre para que la vuelvan a capturar; <b>Liberar todo</b> borra el plan completo del hallazgo para que lo registren de nuevo. Cada liberación queda guardada con su motivo.</p>
+   <div class="row"><div class="s"><label class="f" for="plF">Folio</label><input id="plF" inputmode="numeric"></div><div style="flex:0 0 auto"><button class="btn b2" id="plB">Buscar</button></div></div>
+   <div class="err" id="plE" aria-live="polite"></div><div id="plD"></div></div>`;
+  const buscar=async()=>{
+    const f=$('plF').value.replace(/\D/g,''); $('plD').innerHTML=''; $('plE').textContent=''; if(!f) return;
+    try{
+      await cargarCat(); const [as,ps]=await Promise.all([getDoc(doc(db,'auditorias',f)),getDocs(query(collection(db,'acciones'),where('folio','==',+f)))]);
+      if(!as.exists()){ $('plE').textContent=`No existe el folio ${f}.`; return; }
+      const a=as.data(), pm=Object.fromEntries(CAT.preguntas.map(p=>[p.n,p])), AC={}; ps.forEach(d=>AC[d.data().n]=d.data());
+      const hs=(a.respuestas||[]).filter(r=>r.cumple==='No');
+      $('plD').innerHTML=`<p class="sub" style="margin-top:12px"><b>${esc(a.area)}</b> · ${esc(a.fecha)} · Equipo ${esc(a.equipo)} · ${hs.length} hallazgo${hs.length===1?'':'s'}</p>
+       <div class="wrap"><table><thead><tr><th>P</th><th>Hallazgo</th><th>Acción</th><th>Responsable</th><th>Compromiso</th><th>Cierre</th><th></th></tr></thead><tbody>
+       ${hs.map(r=>{ const x=AC[r.n]; return `<tr><td>${r.n}</td><td><b>${SN[r.s]}:</b> ${esc(r.comentario||'')}</td>
+         ${x?`<td>${esc(x.accion)}<div class="sub" style="margin:2px 0 0;font-size:12px">${esc(x.registradoPor)} · ${ftsA(x.registrado)}</div></td><td>${esc(x.responsable)}</td><td>${fdmyA(x.compromiso)}</td><td>${x.cierre?fdmyA(x.cierre)+`<div class="sub" style="margin:2px 0 0;font-size:12px">${esc(x.cerradoPor)}</div>`:'—'}</td>
+           <td class="acts">${x.cierre?`<button class="btn b3" data-q="${r.n}">Quitar cierre</button> `:''}<button class="btn bd" data-l="${r.n}">Liberar todo</button></td>`
+          :'<td colspan="5" class="sub">Sin plan registrado</td>'}</tr>`; }).join('')}</tbody></table></div>`;
+      const liberar=async(n,tipo)=>{
+        const x=AC[n], id=f+'_'+n;
+        const mot=prompt(tipo==='todo'?`Liberar el plan de la pregunta ${n}. Se borrará para que el equipo lo registre de nuevo.\n\nMotivo:`:`Quitar la fecha de cierre de la pregunta ${n}.\n\nMotivo:`);
+        if(mot===null) return; if(!mot.trim()){ toast('Escribe el motivo.'); return; }
+        try{
+          const b=writeBatch(db);
+          b.set(doc(collection(db,'liberaciones')),{accionId:id,folio:+f,n,tipo,anterior:x,motivo:mot.trim(),por:auth.currentUser?.email||'',fecha:serverTimestamp()});
+          if(tipo==='todo') b.delete(doc(db,'acciones',id)); else b.update(doc(db,'acciones',id),{cierre:'',cerradoPor:'',cerrado:null});
+          await b.commit(); toast(tipo==='todo'?'Plan liberado':'Fecha de cierre quitada'); buscar();
+        }catch(e){ fallo(e); }
+      };
+      $('plD').querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>liberar(+b.dataset.l,'todo'));
+      $('plD').querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>liberar(+b.dataset.q,'cierre'));
+    }catch(e){ fallo(e); }
+  };
+  $('plB').onclick=buscar; $('plF').addEventListener('keydown',e=>{ if(e.key==='Enter') buscar(); });
 }
 
 // ---------- Auditorías ----------
